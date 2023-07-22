@@ -16,7 +16,6 @@ type Config struct {
 const connectionString = "file:%s?mode=%s&cache=shared&_fk=1"
 
 func NewSqliteDB(cfg Config) (*ent.Client, error) {
-
 	client, err := ent.Open("sqlite3", buildConnectionString(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite db: %w", err)

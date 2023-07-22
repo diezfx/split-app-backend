@@ -60,7 +60,7 @@ func Name(v string) predicate.Transaction {
 }
 
 // Amount applies equality check predicate on the "amount" field. It's identical to AmountEQ.
-func Amount(v float64) predicate.Transaction {
+func Amount(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldEQ(FieldAmount, v))
 }
 
@@ -135,42 +135,42 @@ func NameContainsFold(v string) predicate.Transaction {
 }
 
 // AmountEQ applies the EQ predicate on the "amount" field.
-func AmountEQ(v float64) predicate.Transaction {
+func AmountEQ(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldEQ(FieldAmount, v))
 }
 
 // AmountNEQ applies the NEQ predicate on the "amount" field.
-func AmountNEQ(v float64) predicate.Transaction {
+func AmountNEQ(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldNEQ(FieldAmount, v))
 }
 
 // AmountIn applies the In predicate on the "amount" field.
-func AmountIn(vs ...float64) predicate.Transaction {
+func AmountIn(vs ...int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldIn(FieldAmount, vs...))
 }
 
 // AmountNotIn applies the NotIn predicate on the "amount" field.
-func AmountNotIn(vs ...float64) predicate.Transaction {
+func AmountNotIn(vs ...int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldNotIn(FieldAmount, vs...))
 }
 
 // AmountGT applies the GT predicate on the "amount" field.
-func AmountGT(v float64) predicate.Transaction {
+func AmountGT(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldGT(FieldAmount, v))
 }
 
 // AmountGTE applies the GTE predicate on the "amount" field.
-func AmountGTE(v float64) predicate.Transaction {
+func AmountGTE(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldGTE(FieldAmount, v))
 }
 
 // AmountLT applies the LT predicate on the "amount" field.
-func AmountLT(v float64) predicate.Transaction {
+func AmountLT(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldLT(FieldAmount, v))
 }
 
 // AmountLTE applies the LTE predicate on the "amount" field.
-func AmountLTE(v float64) predicate.Transaction {
+func AmountLTE(v int64) predicate.Transaction {
 	return predicate.Transaction(sql.FieldLTE(FieldAmount, v))
 }
 
@@ -237,6 +237,26 @@ func SourceIDEqualFold(v string) predicate.Transaction {
 // SourceIDContainsFold applies the ContainsFold predicate on the "source_id" field.
 func SourceIDContainsFold(v string) predicate.Transaction {
 	return predicate.Transaction(sql.FieldContainsFold(FieldSourceID, v))
+}
+
+// TransactionTypeEQ applies the EQ predicate on the "transaction_type" field.
+func TransactionTypeEQ(v TransactionType) predicate.Transaction {
+	return predicate.Transaction(sql.FieldEQ(FieldTransactionType, v))
+}
+
+// TransactionTypeNEQ applies the NEQ predicate on the "transaction_type" field.
+func TransactionTypeNEQ(v TransactionType) predicate.Transaction {
+	return predicate.Transaction(sql.FieldNEQ(FieldTransactionType, v))
+}
+
+// TransactionTypeIn applies the In predicate on the "transaction_type" field.
+func TransactionTypeIn(vs ...TransactionType) predicate.Transaction {
+	return predicate.Transaction(sql.FieldIn(FieldTransactionType, vs...))
+}
+
+// TransactionTypeNotIn applies the NotIn predicate on the "transaction_type" field.
+func TransactionTypeNotIn(vs ...TransactionType) predicate.Transaction {
+	return predicate.Transaction(sql.FieldNotIn(FieldTransactionType, vs...))
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

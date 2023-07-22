@@ -6,6 +6,7 @@ import (
 
 	"github.com/diezfx/split-app-backend/gen/ent"
 	"github.com/diezfx/split-app-backend/gen/ent/project"
+	"github.com/diezfx/split-app-backend/gen/ent/transaction"
 	"github.com/google/uuid"
 )
 
@@ -38,6 +39,26 @@ func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (*ent.Project
 	}
 
 	return proj, nil
+}
+
+func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]*ent.Transaction, error) {
+	txs, err := c.entClient.Transaction.Query().
+		Where(transaction.And(transaction.SourceID(userID))).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get all outgoing edges: %w", err)
+	}
+	return txs, nil
+}
+
+func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, projectID uuid.UUID, userID string) ([]*ent.Transaction, error) {
+	txs, err := c.entClient.Transaction.Query().
+		Where(transaction.And(transaction.SourceID(userID), transaction.HasProjectWith(project.ID(projectID)))).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get all outgoing edges: %w", err)
+	}
+	return txs, nil
 }
 
 func (c *Client) Seed() error {
@@ -75,7 +96,8 @@ func (c *Client) Seed() error {
 
 	transactions := []*ent.TransactionCreate{
 		c.entClient.Transaction.Create().SetID(id1).SetName("transaction1").SetAmount(25).SetSourceID("user1").SetTargetIds([]string{"user2"}),
-		c.entClient.Transaction.Create().SetID(id2).SetName("transaction2").SetAmount(100).SetSourceID("user2").SetTargetIds([]string{"user3"})}
+		c.entClient.Transaction.Create().SetID(id2).SetName("transaction2").SetAmount(100).SetSourceID("user2").SetTargetIds([]string{"user3"}),
+	}
 	err = c.entClient.Transaction.CreateBulk(transactions...).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("store transactions: %w", err)

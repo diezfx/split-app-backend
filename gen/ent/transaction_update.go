@@ -37,21 +37,27 @@ func (tu *TransactionUpdate) SetName(s string) *TransactionUpdate {
 }
 
 // SetAmount sets the "amount" field.
-func (tu *TransactionUpdate) SetAmount(f float64) *TransactionUpdate {
+func (tu *TransactionUpdate) SetAmount(i int64) *TransactionUpdate {
 	tu.mutation.ResetAmount()
-	tu.mutation.SetAmount(f)
+	tu.mutation.SetAmount(i)
 	return tu
 }
 
-// AddAmount adds f to the "amount" field.
-func (tu *TransactionUpdate) AddAmount(f float64) *TransactionUpdate {
-	tu.mutation.AddAmount(f)
+// AddAmount adds i to the "amount" field.
+func (tu *TransactionUpdate) AddAmount(i int64) *TransactionUpdate {
+	tu.mutation.AddAmount(i)
 	return tu
 }
 
 // SetSourceID sets the "source_id" field.
 func (tu *TransactionUpdate) SetSourceID(s string) *TransactionUpdate {
 	tu.mutation.SetSourceID(s)
+	return tu
+}
+
+// SetTransactionType sets the "transaction_type" field.
+func (tu *TransactionUpdate) SetTransactionType(tt transaction.TransactionType) *TransactionUpdate {
+	tu.mutation.SetTransactionType(tt)
 	return tu
 }
 
@@ -135,7 +141,20 @@ func (tu *TransactionUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tu *TransactionUpdate) check() error {
+	if v, ok := tu.mutation.TransactionType(); ok {
+		if err := transaction.TransactionTypeValidator(v); err != nil {
+			return &ValidationError{Name: "transaction_type", err: fmt.Errorf(`ent: validator failed for field "Transaction.transaction_type": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tu *TransactionUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := tu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(transaction.Table, transaction.Columns, sqlgraph.NewFieldSpec(transaction.FieldID, field.TypeUUID))
 	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -148,13 +167,16 @@ func (tu *TransactionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(transaction.FieldName, field.TypeString, value)
 	}
 	if value, ok := tu.mutation.Amount(); ok {
-		_spec.SetField(transaction.FieldAmount, field.TypeFloat64, value)
+		_spec.SetField(transaction.FieldAmount, field.TypeInt64, value)
 	}
 	if value, ok := tu.mutation.AddedAmount(); ok {
-		_spec.AddField(transaction.FieldAmount, field.TypeFloat64, value)
+		_spec.AddField(transaction.FieldAmount, field.TypeInt64, value)
 	}
 	if value, ok := tu.mutation.SourceID(); ok {
 		_spec.SetField(transaction.FieldSourceID, field.TypeString, value)
+	}
+	if value, ok := tu.mutation.TransactionType(); ok {
+		_spec.SetField(transaction.FieldTransactionType, field.TypeEnum, value)
 	}
 	if value, ok := tu.mutation.TargetIds(); ok {
 		_spec.SetField(transaction.FieldTargetIds, field.TypeJSON, value)
@@ -236,21 +258,27 @@ func (tuo *TransactionUpdateOne) SetName(s string) *TransactionUpdateOne {
 }
 
 // SetAmount sets the "amount" field.
-func (tuo *TransactionUpdateOne) SetAmount(f float64) *TransactionUpdateOne {
+func (tuo *TransactionUpdateOne) SetAmount(i int64) *TransactionUpdateOne {
 	tuo.mutation.ResetAmount()
-	tuo.mutation.SetAmount(f)
+	tuo.mutation.SetAmount(i)
 	return tuo
 }
 
-// AddAmount adds f to the "amount" field.
-func (tuo *TransactionUpdateOne) AddAmount(f float64) *TransactionUpdateOne {
-	tuo.mutation.AddAmount(f)
+// AddAmount adds i to the "amount" field.
+func (tuo *TransactionUpdateOne) AddAmount(i int64) *TransactionUpdateOne {
+	tuo.mutation.AddAmount(i)
 	return tuo
 }
 
 // SetSourceID sets the "source_id" field.
 func (tuo *TransactionUpdateOne) SetSourceID(s string) *TransactionUpdateOne {
 	tuo.mutation.SetSourceID(s)
+	return tuo
+}
+
+// SetTransactionType sets the "transaction_type" field.
+func (tuo *TransactionUpdateOne) SetTransactionType(tt transaction.TransactionType) *TransactionUpdateOne {
+	tuo.mutation.SetTransactionType(tt)
 	return tuo
 }
 
@@ -347,7 +375,20 @@ func (tuo *TransactionUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tuo *TransactionUpdateOne) check() error {
+	if v, ok := tuo.mutation.TransactionType(); ok {
+		if err := transaction.TransactionTypeValidator(v); err != nil {
+			return &ValidationError{Name: "transaction_type", err: fmt.Errorf(`ent: validator failed for field "Transaction.transaction_type": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tuo *TransactionUpdateOne) sqlSave(ctx context.Context) (_node *Transaction, err error) {
+	if err := tuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(transaction.Table, transaction.Columns, sqlgraph.NewFieldSpec(transaction.FieldID, field.TypeUUID))
 	id, ok := tuo.mutation.ID()
 	if !ok {
@@ -377,13 +418,16 @@ func (tuo *TransactionUpdateOne) sqlSave(ctx context.Context) (_node *Transactio
 		_spec.SetField(transaction.FieldName, field.TypeString, value)
 	}
 	if value, ok := tuo.mutation.Amount(); ok {
-		_spec.SetField(transaction.FieldAmount, field.TypeFloat64, value)
+		_spec.SetField(transaction.FieldAmount, field.TypeInt64, value)
 	}
 	if value, ok := tuo.mutation.AddedAmount(); ok {
-		_spec.AddField(transaction.FieldAmount, field.TypeFloat64, value)
+		_spec.AddField(transaction.FieldAmount, field.TypeInt64, value)
 	}
 	if value, ok := tuo.mutation.SourceID(); ok {
 		_spec.SetField(transaction.FieldSourceID, field.TypeString, value)
+	}
+	if value, ok := tuo.mutation.TransactionType(); ok {
+		_spec.SetField(transaction.FieldTransactionType, field.TypeEnum, value)
 	}
 	if value, ok := tuo.mutation.TargetIds(); ok {
 		_spec.SetField(transaction.FieldTargetIds, field.TypeJSON, value)

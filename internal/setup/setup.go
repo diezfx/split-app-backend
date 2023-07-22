@@ -49,5 +49,4 @@ func SetupSplitService() (*http.Server, error) {
 	}
 
 	return srv, nil
-
 }

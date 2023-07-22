@@ -18,7 +18,6 @@ func New(projStorage ProjectStorage) *Service {
 }
 
 func (s *Service) GetProject(ctx context.Context, id uuid.UUID) (Project, error) {
-
 	proj, err := s.projStorage.GetProjectByID(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return Project{}, ErrProjectNotFound

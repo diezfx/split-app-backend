@@ -17,8 +17,9 @@ func (Transaction) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}),
 		field.String("name"),
-		field.Float("amount"),
+		field.Int64("amount"),
 		field.String("source_id"),
+		field.Enum("transaction_type").Values("expense", "transfer"),
 		field.JSON("target_ids", []string{}),
 	}
 }

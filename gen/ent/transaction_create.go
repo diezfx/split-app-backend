@@ -28,14 +28,20 @@ func (tc *TransactionCreate) SetName(s string) *TransactionCreate {
 }
 
 // SetAmount sets the "amount" field.
-func (tc *TransactionCreate) SetAmount(f float64) *TransactionCreate {
-	tc.mutation.SetAmount(f)
+func (tc *TransactionCreate) SetAmount(i int64) *TransactionCreate {
+	tc.mutation.SetAmount(i)
 	return tc
 }
 
 // SetSourceID sets the "source_id" field.
 func (tc *TransactionCreate) SetSourceID(s string) *TransactionCreate {
 	tc.mutation.SetSourceID(s)
+	return tc
+}
+
+// SetTransactionType sets the "transaction_type" field.
+func (tc *TransactionCreate) SetTransactionType(tt transaction.TransactionType) *TransactionCreate {
+	tc.mutation.SetTransactionType(tt)
 	return tc
 }
 
@@ -109,6 +115,14 @@ func (tc *TransactionCreate) check() error {
 	if _, ok := tc.mutation.SourceID(); !ok {
 		return &ValidationError{Name: "source_id", err: errors.New(`ent: missing required field "Transaction.source_id"`)}
 	}
+	if _, ok := tc.mutation.TransactionType(); !ok {
+		return &ValidationError{Name: "transaction_type", err: errors.New(`ent: missing required field "Transaction.transaction_type"`)}
+	}
+	if v, ok := tc.mutation.TransactionType(); ok {
+		if err := transaction.TransactionTypeValidator(v); err != nil {
+			return &ValidationError{Name: "transaction_type", err: fmt.Errorf(`ent: validator failed for field "Transaction.transaction_type": %w`, err)}
+		}
+	}
 	if _, ok := tc.mutation.TargetIds(); !ok {
 		return &ValidationError{Name: "target_ids", err: errors.New(`ent: missing required field "Transaction.target_ids"`)}
 	}
@@ -152,12 +166,16 @@ func (tc *TransactionCreate) createSpec() (*Transaction, *sqlgraph.CreateSpec) {
 		_node.Name = value
 	}
 	if value, ok := tc.mutation.Amount(); ok {
-		_spec.SetField(transaction.FieldAmount, field.TypeFloat64, value)
+		_spec.SetField(transaction.FieldAmount, field.TypeInt64, value)
 		_node.Amount = value
 	}
 	if value, ok := tc.mutation.SourceID(); ok {
 		_spec.SetField(transaction.FieldSourceID, field.TypeString, value)
 		_node.SourceID = value
+	}
+	if value, ok := tc.mutation.TransactionType(); ok {
+		_spec.SetField(transaction.FieldTransactionType, field.TypeEnum, value)
+		_node.TransactionType = value
 	}
 	if value, ok := tc.mutation.TargetIds(); ok {
 		_spec.SetField(transaction.FieldTargetIds, field.TypeJSON, value)

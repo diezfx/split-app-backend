@@ -21,9 +21,11 @@ type Transaction struct {
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Amount holds the value of the "amount" field.
-	Amount float64 `json:"amount,omitempty"`
+	Amount int64 `json:"amount,omitempty"`
 	// SourceID holds the value of the "source_id" field.
 	SourceID string `json:"source_id,omitempty"`
+	// TransactionType holds the value of the "transaction_type" field.
+	TransactionType transaction.TransactionType `json:"transaction_type,omitempty"`
 	// TargetIds holds the value of the "target_ids" field.
 	TargetIds []string `json:"target_ids,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -59,8 +61,8 @@ func (*Transaction) scanValues(columns []string) ([]any, error) {
 		case transaction.FieldTargetIds:
 			values[i] = new([]byte)
 		case transaction.FieldAmount:
-			values[i] = new(sql.NullFloat64)
-		case transaction.FieldName, transaction.FieldSourceID:
+			values[i] = new(sql.NullInt64)
+		case transaction.FieldName, transaction.FieldSourceID, transaction.FieldTransactionType:
 			values[i] = new(sql.NullString)
 		case transaction.FieldID:
 			values[i] = new(uuid.UUID)
@@ -94,16 +96,22 @@ func (t *Transaction) assignValues(columns []string, values []any) error {
 				t.Name = value.String
 			}
 		case transaction.FieldAmount:
-			if value, ok := values[i].(*sql.NullFloat64); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field amount", values[i])
 			} else if value.Valid {
-				t.Amount = value.Float64
+				t.Amount = value.Int64
 			}
 		case transaction.FieldSourceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field source_id", values[i])
 			} else if value.Valid {
 				t.SourceID = value.String
+			}
+		case transaction.FieldTransactionType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field transaction_type", values[i])
+			} else if value.Valid {
+				t.TransactionType = transaction.TransactionType(value.String)
 			}
 		case transaction.FieldTargetIds:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -169,6 +177,9 @@ func (t *Transaction) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("source_id=")
 	builder.WriteString(t.SourceID)
+	builder.WriteString(", ")
+	builder.WriteString("transaction_type=")
+	builder.WriteString(fmt.Sprintf("%v", t.TransactionType))
 	builder.WriteString(", ")
 	builder.WriteString("target_ids=")
 	builder.WriteString(fmt.Sprintf("%v", t.TargetIds))

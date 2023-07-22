@@ -53,7 +53,6 @@ func InitApi(cfg config.Config, projectService ProjectService) *http.Server {
 }
 
 func (api *ApiHandler) getProjectHandler(ctx *gin.Context) {
-
 	id := ctx.Param("id")
 	uuid, err := uuid.Parse(id)
 	if err != nil {

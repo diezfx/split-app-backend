@@ -4,6 +4,7 @@ GOLANG_CI_VERSION=v1.53.1
 
 
 generate:
+	go generate ./...
 	go run -mod=mod entgo.io/ent/cmd/ent generate --feature sql/versioned-migration ./internal/ent/schema --target gen/ent
 
 

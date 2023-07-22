@@ -3,6 +3,8 @@
 package transaction
 
 import (
+	"fmt"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -18,6 +20,8 @@ const (
 	FieldAmount = "amount"
 	// FieldSourceID holds the string denoting the source_id field in the database.
 	FieldSourceID = "source_id"
+	// FieldTransactionType holds the string denoting the transaction_type field in the database.
+	FieldTransactionType = "transaction_type"
 	// FieldTargetIds holds the string denoting the target_ids field in the database.
 	FieldTargetIds = "target_ids"
 	// EdgeProject holds the string denoting the project edge name in mutations.
@@ -39,6 +43,7 @@ var Columns = []string{
 	FieldName,
 	FieldAmount,
 	FieldSourceID,
+	FieldTransactionType,
 	FieldTargetIds,
 }
 
@@ -63,6 +68,29 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// TransactionType defines the type for the "transaction_type" enum field.
+type TransactionType string
+
+// TransactionType values.
+const (
+	TransactionTypeExpense  TransactionType = "expense"
+	TransactionTypeTransfer TransactionType = "transfer"
+)
+
+func (tt TransactionType) String() string {
+	return string(tt)
+}
+
+// TransactionTypeValidator is a validator for the "transaction_type" field enum values. It is called by the builders before save.
+func TransactionTypeValidator(tt TransactionType) error {
+	switch tt {
+	case TransactionTypeExpense, TransactionTypeTransfer:
+		return nil
+	default:
+		return fmt.Errorf("transaction: invalid enum value for transaction_type field: %q", tt)
+	}
+}
+
 // OrderOption defines the ordering options for the Transaction queries.
 type OrderOption func(*sql.Selector)
 
@@ -84,6 +112,11 @@ func ByAmount(opts ...sql.OrderTermOption) OrderOption {
 // BySourceID orders the results by the source_id field.
 func BySourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceID, opts...).ToFunc()
+}
+
+// ByTransactionType orders the results by the transaction_type field.
+func ByTransactionType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTransactionType, opts...).ToFunc()
 }
 
 // ByProjectCount orders the results by project count.

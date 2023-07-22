@@ -33,8 +33,9 @@ var (
 	TransactionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString},
-		{Name: "amount", Type: field.TypeFloat64},
+		{Name: "amount", Type: field.TypeInt64},
 		{Name: "source_id", Type: field.TypeString},
+		{Name: "transaction_type", Type: field.TypeEnum, Enums: []string{"expense", "transfer"}},
 		{Name: "target_ids", Type: field.TypeJSON},
 		{Name: "project_transactions", Type: field.TypeUUID, Nullable: true},
 	}
@@ -46,7 +47,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "transactions_projects_transactions",
-				Columns:    []*schema.Column{TransactionsColumns[5]},
+				Columns:    []*schema.Column{TransactionsColumns[6]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

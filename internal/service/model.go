@@ -1,10 +1,12 @@
 package service
 
 import (
+	"github.com/Rhymond/go-money"
 	"github.com/diezfx/split-app-backend/gen/ent"
 	"github.com/google/uuid"
 )
 
+//go:generate go run github.com/dmarkham/enumer -type=TransactionType
 type TransactionType int
 
 const (
@@ -16,7 +18,7 @@ type Transaction struct {
 	ID              uuid.UUID
 	Name            string
 	TransactionType TransactionType
-	Amount          float64
+	Amount          *money.Money
 	SourceID        string
 	TargetIDs       []string
 }
@@ -45,7 +47,8 @@ func FromEntProject(project *ent.Project) Project {
 func FromEntTransaction(trans *ent.Transaction) Transaction {
 	return Transaction{
 		ID:   trans.ID,
-		Name: trans.Name, Amount: trans.Amount,
+		Name: trans.Name, Amount: money.New(trans.Amount, money.EUR),
 		SourceID:  trans.SourceID,
-		TargetIDs: trans.TargetIds}
+		TargetIDs: trans.TargetIds,
+	}
 }
