@@ -33,6 +33,7 @@ func InitApi(cfg config.Config, projectService ProjectService) *http.Server {
 	apiHandler := newApiHandler(projectService)
 
 	r.GET("project/:id", apiHandler.getProjectHandler)
+	r.POST("project", apiHandler.addProjectHandler)
 
 	mr.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"PUT", "PATCH", "POST", "OPTION"},
@@ -67,6 +68,31 @@ func (api *ApiHandler) getProjectHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, proj)
+}
+
+func (api *ApiHandler) addProjectHandler(ctx *gin.Context) {
+	var body *AddProject
+	err := ctx.Bind(body)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("parse add project body: %w: %w", errInvalidInput, err))
+		return
+	}
+
+	idParsed, err := uuid.Parse(body.ID)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("parse id in body: %w: %w", errInvalidInput, err))
+		return
+	}
+
+	project := service.Project{ID: idParsed, Name: body.Name, Members: body.Members}
+
+	err = api.projectService.AddProject(ctx, project)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
 }
 
 func handleError(ctx *gin.Context, err error) {

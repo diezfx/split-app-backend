@@ -14,7 +14,7 @@ type Config struct {
 	Environment Environment
 	LogLevel    string
 
-	Db sqlite.Config
+	DB sqlite.Config
 }
 
 func Load() Config {
@@ -22,6 +22,6 @@ func Load() Config {
 		Addr:        "localhost:5002",
 		Environment: LocalEnv,
 		LogLevel:    "debug",
-		Db:          sqlite.Config{Path: "ent.db", InMemory: false},
+		DB:          sqlite.Config{Path: "ent.db", InMemory: false},
 	}
 }

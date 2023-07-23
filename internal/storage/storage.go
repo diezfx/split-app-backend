@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const seedUuid = "902b0687-f61c-41c4-86dc-f7d62db6ed7d"
+const seedUUID = "902b0687-f61c-41c4-86dc-f7d62db6ed7d"
 
 type Client struct {
 	entClient *ent.Client
@@ -29,16 +29,28 @@ func New(entClient *ent.Client) (*Client, error) {
 	return &client, nil
 }
 
-func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (*ent.Project, error) {
+func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
 	proj, err := c.entClient.Project.Query().WithTransactions().Where(project.ID(id)).First(ctx)
 	if ent.IsNotFound(err) {
-		return nil, ErrNotFound
+		return Project{}, ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("get project by id: %w", err)
+		return Project{}, fmt.Errorf("get project by id: %w", err)
 	}
 
-	return proj, nil
+	return FromEntProject(proj), nil
+}
+
+func (c *Client) AddProject(ctx context.Context, proj Project) error {
+	_, err := c.entClient.Project.Create().
+		SetID(proj.ID).
+		SetName(proj.Name).
+		SetMembers(proj.Members).Save(ctx)
+	if err != nil {
+		return fmt.Errorf("add project to db: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]*ent.Transaction, error) {
@@ -61,9 +73,10 @@ func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, project
 	return txs, nil
 }
 
+//nolint:gomnd // seed function may contain magic numbers
 func (c *Client) Seed() error {
 	ctx := context.Background()
-	id := uuid.MustParse(seedUuid)
+	id := uuid.MustParse(seedUUID)
 
 	memberList := []string{"user1", "user2"}
 
@@ -95,8 +108,14 @@ func (c *Client) Seed() error {
 	id2 := uuid.New()
 
 	transactions := []*ent.TransactionCreate{
-		c.entClient.Transaction.Create().SetID(id1).SetName("transaction1").SetAmount(25).SetSourceID("user1").SetTargetIds([]string{"user2"}),
-		c.entClient.Transaction.Create().SetID(id2).SetName("transaction2").SetAmount(100).SetSourceID("user2").SetTargetIds([]string{"user3"}),
+		c.entClient.Transaction.Create().
+			SetID(id1).SetName("transaction1").SetAmount(25).SetSourceID("user1").
+			SetTransactionType(transaction.TransactionTypeExpense).
+			SetTargetIds([]string{"user2"}),
+		c.entClient.Transaction.Create().
+			SetID(id2).SetName("transaction2").SetAmount(100).SetSourceID("user2").
+			SetTransactionType(transaction.TransactionTypeExpense).
+			SetTargetIds([]string{"user3"}),
 	}
 	err = c.entClient.Transaction.CreateBulk(transactions...).Exec(ctx)
 	if err != nil {

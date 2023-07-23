@@ -26,7 +26,7 @@ func SetupSplitService() (*http.Server, error) {
 
 	logger.Info(ctx).String("config", fmt.Sprint(cfg)).Msg("Loaded config")
 
-	entClient, err := sqlite.NewSqliteDB(cfg.Db)
+	entClient, err := sqlite.NewSqliteDB(cfg.DB)
 	if err != nil {
 		return nil, fmt.Errorf("create sqlite client: %w", err)
 	}

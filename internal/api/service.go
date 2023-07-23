@@ -9,4 +9,5 @@ import (
 
 type ProjectService interface {
 	GetProject(ctx context.Context, id uuid.UUID) (service.Project, error)
+	AddProject(ctx context.Context, proj service.Project) error
 }

@@ -25,5 +25,22 @@ func (s *Service) GetProject(ctx context.Context, id uuid.UUID) (Project, error)
 	if err != nil {
 		return Project{}, fmt.Errorf("get project:%w", err)
 	}
-	return FromEntProject(proj), nil
+	return FromStorageProject(proj), nil
+}
+
+func (s *Service) AddProject(ctx context.Context, project Project) error {
+	_, err := s.projStorage.GetProjectByID(ctx, project.ID)
+	if err != nil && !errors.Is(err, ErrProjectNotFound) {
+		return fmt.Errorf("add project: %w", err)
+	}
+	if !errors.Is(err, ErrProjectNotFound) {
+		return fmt.Errorf("add project: %w", err)
+	}
+
+	err = s.projStorage.AddProject(ctx, ToStorageProject(project))
+	if err != nil {
+		return fmt.Errorf("add project: %w", err)
+	}
+
+	return nil
 }

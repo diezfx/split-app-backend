@@ -107,7 +107,6 @@ func compareEdges(t *testing.T, actual, expected []Edge) {
 			}
 		}
 		if !foundEdge {
-
 			t.Errorf("expected edge (%s:%s) not found", expectedEdge.Source, expectedEdge.Target)
 		}
 	}

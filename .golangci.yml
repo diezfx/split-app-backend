@@ -36,6 +36,9 @@ linters-settings:
       - ifElseChain
       - octalLiteral
       - whyNoLint
+    settings:
+      hugeparam:
+        sizeThreshold: 144
   gocyclo:
     min-complexity: 15
   gofmt:
