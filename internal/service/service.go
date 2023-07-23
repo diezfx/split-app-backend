@@ -30,10 +30,10 @@ func (s *Service) GetProject(ctx context.Context, id uuid.UUID) (Project, error)
 
 func (s *Service) AddProject(ctx context.Context, project Project) error {
 	_, err := s.projStorage.GetProjectByID(ctx, project.ID)
-	if err != nil && !errors.Is(err, ErrProjectNotFound) {
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return fmt.Errorf("add project: %w", err)
 	}
-	if !errors.Is(err, ErrProjectNotFound) {
+	if !errors.Is(err, storage.ErrNotFound) {
 		return fmt.Errorf("add project: %w", err)
 	}
 

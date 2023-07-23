@@ -19,18 +19,18 @@ type ApiHandler struct {
 	projectService ProjectService
 }
 
-func newApiHandler(projectService ProjectService) *ApiHandler {
+func newAPIHandler(projectService ProjectService) *ApiHandler {
 	return &ApiHandler{projectService: projectService}
 }
 
-func InitApi(cfg config.Config, projectService ProjectService) *http.Server {
+func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	mr := gin.New()
 	mr.Use(gin.Recovery())
 
 	r := mr.Group("/api/v1.0/")
 	r.Use(middleware.HTTPLoggingMiddleware())
 
-	apiHandler := newApiHandler(projectService)
+	apiHandler := newAPIHandler(projectService)
 
 	r.GET("project/:id", apiHandler.getProjectHandler)
 	r.POST("project", apiHandler.addProjectHandler)
@@ -71,8 +71,8 @@ func (api *ApiHandler) getProjectHandler(ctx *gin.Context) {
 }
 
 func (api *ApiHandler) addProjectHandler(ctx *gin.Context) {
-	var body *AddProject
-	err := ctx.Bind(body)
+	var body AddProject
+	err := ctx.BindJSON(&body)
 	if err != nil {
 		handleError(ctx, fmt.Errorf("parse add project body: %w: %w", errInvalidInput, err))
 		return
@@ -104,7 +104,7 @@ func handleError(ctx *gin.Context, err error) {
 		logger.Info(ctx).Err(err).Msg("not found")
 		ctx.String(http.StatusNotFound, "not found")
 	default:
-		logger.Error(ctx, err).Msg("unexpected error occured")
+		logger.Error(ctx, err).Msg("unexpected error occurred")
 		ctx.String(http.StatusInternalServerError, "unexpected error")
 	}
 }

@@ -70,7 +70,6 @@ func calculateBalances(edges []Edge) map[string]*money.Money {
 		userBalance[edge.Source] = newMoneyVal
 		newMoneyVal, _ = userBalance[edge.Target].Subtract(edge.Amount)
 		userBalance[edge.Target] = newMoneyVal
-
 	}
 
 	return userBalance
