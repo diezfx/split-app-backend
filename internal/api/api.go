@@ -32,8 +32,9 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 
 	apiHandler := newAPIHandler(projectService)
 
-	r.GET("project/:id", apiHandler.getProjectHandler)
-	r.POST("project", apiHandler.addProjectHandler)
+	r.GET("projects/:id", apiHandler.getProjectHandler)
+	r.POST("projects", apiHandler.addProjectHandler)
+	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
 
 	mr.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"PUT", "PATCH", "POST", "OPTION"},
@@ -54,20 +55,49 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 }
 
 func (api *ApiHandler) getProjectHandler(ctx *gin.Context) {
-	id := ctx.Param("id")
-	uuid, err := uuid.Parse(id)
+	idStr := ctx.Param("id")
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		handleError(ctx, fmt.Errorf("parse uuid: %w: %w", errInvalidInput, err))
+		handleError(ctx, fmt.Errorf("parse id: %w: %w", errInvalidInput, err))
 		return
 	}
 
-	proj, err := api.projectService.GetProject(ctx, uuid)
+	proj, err := api.projectService.GetProject(ctx, id)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, proj)
+}
+
+func (api *ApiHandler) addTransactionHandler(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("parse id: %w: %w", errInvalidInput, err))
+		return
+	}
+
+	var transaction AddTransaction
+	if err := ctx.BindJSON(&transaction); err != nil {
+		handleError(ctx, fmt.Errorf("bind body: %w: %w", errInvalidInput, err))
+		return
+	}
+
+	svcTransaction, err := transaction.Validate()
+	if err != nil {
+		handleError(ctx, fmt.Errorf("validate transaction: %w: %w", errInvalidInput, err))
+		return
+	}
+
+	err = api.projectService.AddTransaction(ctx, id, svcTransaction)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusCreated)
 }
 
 func (api *ApiHandler) addProjectHandler(ctx *gin.Context) {
@@ -86,13 +116,13 @@ func (api *ApiHandler) addProjectHandler(ctx *gin.Context) {
 
 	project := service.Project{ID: idParsed, Name: body.Name, Members: body.Members}
 
-	err = api.projectService.AddProject(ctx, project)
+	proj, err := api.projectService.AddProject(ctx, project)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	ctx.Status(http.StatusOK)
+	ctx.JSON(http.StatusCreated, proj)
 }
 
 func handleError(ctx *gin.Context, err error) {

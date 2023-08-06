@@ -10,8 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const seedUUID = "902b0687-f61c-41c4-86dc-f7d62db6ed7d"
-
 type Client struct {
 	entClient *ent.Client
 }
@@ -41,15 +39,29 @@ func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, err
 	return FromEntProject(proj), nil
 }
 
-func (c *Client) AddProject(ctx context.Context, proj Project) error {
-	_, err := c.entClient.Project.Create().
+func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) {
+	result, err := c.entClient.Project.Create().
 		SetID(proj.ID).
 		SetName(proj.Name).
 		SetMembers(proj.Members).Save(ctx)
 	if err != nil {
-		return fmt.Errorf("add project to db: %w", err)
+		return Project{}, fmt.Errorf("add project to db: %w", err)
 	}
 
+	return FromEntProject(result), nil
+}
+
+func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transaction Transaction) error {
+
+	_, err := c.entClient.Transaction.Create().
+		SetID(transaction.ID).
+		SetName(transaction.Name).
+		SetAmount(transaction.Amount.Amount()).
+		SetSourceID(transaction.SourceID).SetTransactionType(transaction.TransactionType).
+		SetTargetIds(transaction.TargetIDs).AddProjectIDs(projectID).Save(ctx)
+	if err != nil {
+		return fmt.Errorf("add transaction to db: %w", err)
+	}
 	return nil
 }
 
@@ -71,61 +83,4 @@ func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, project
 		return nil, fmt.Errorf("get all outgoing edges: %w", err)
 	}
 	return txs, nil
-}
-
-//nolint:gomnd // seed function may contain magic numbers
-func (c *Client) Seed() error {
-	ctx := context.Background()
-	id := uuid.MustParse(seedUUID)
-
-	memberList := []string{"user1", "user2"}
-
-	// Check if the user "rotemtam" already exists.
-	r, err := c.entClient.Project.Query().
-		Where(project.ID(id)).
-		WithTransactions().
-		Only(ctx)
-	// If not, create the user.
-	if err != nil && !ent.IsNotFound(err) {
-		return fmt.Errorf("query project: %w", err)
-	}
-	if ent.IsNotFound(err) {
-		r, err = c.entClient.Project.Create().
-			SetID(id).
-			SetName("testProj1").
-			SetMembers(memberList).
-			Save(ctx)
-		if err != nil {
-			return fmt.Errorf("create project: %w", err)
-		}
-	}
-
-	if len(r.Edges.Transactions) >= 2 {
-		return nil
-	}
-
-	id1 := uuid.New()
-	id2 := uuid.New()
-
-	transactions := []*ent.TransactionCreate{
-		c.entClient.Transaction.Create().
-			SetID(id1).SetName("transaction1").SetAmount(25).SetSourceID("user1").
-			SetTransactionType(transaction.TransactionTypeExpense).
-			SetTargetIds([]string{"user2"}),
-		c.entClient.Transaction.Create().
-			SetID(id2).SetName("transaction2").SetAmount(100).SetSourceID("user2").
-			SetTransactionType(transaction.TransactionTypeExpense).
-			SetTargetIds([]string{"user3"}),
-	}
-	err = c.entClient.Transaction.CreateBulk(transactions...).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("store transactions: %w", err)
-	}
-
-	err = r.Update().AddTransactionIDs(id1, id2).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("connect transactions to project")
-	}
-
-	return nil
 }

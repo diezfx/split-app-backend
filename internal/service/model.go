@@ -15,6 +15,17 @@ const (
 	Transfer  TransactionType = "Transfer"
 )
 
+func ConvertToTransactionType(trans string) TransactionType {
+	switch trans {
+	case string(Expense):
+		return Expense
+	case string(Transfer):
+		return Transfer
+	default:
+		return Undefined
+	}
+}
+
 type Transaction struct {
 	ID              uuid.UUID
 	Name            string
