@@ -32,7 +32,8 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 
 	apiHandler := newAPIHandler(projectService)
 
-	r.GET("projects/:id", apiHandler.getProjectHandler)
+	r.GET("projects/:id", apiHandler.getProjectByIDHandler)
+	r.GET("projects", apiHandler.getProjectsHandler)
 	r.POST("projects", apiHandler.addProjectHandler)
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
 
@@ -54,7 +55,25 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	}
 }
 
-func (api *ApiHandler) getProjectHandler(ctx *gin.Context) {
+func (api *ApiHandler) getProjectsHandler(ctx *gin.Context) {
+
+	var queryParams GetProjectsQueryParams
+	err := ctx.BindQuery(&queryParams)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("getProjectHandler parse query params : %w: %w", errInvalidInput, err))
+		return
+	}
+
+	proj, err := api.projectService.GetProjects(ctx)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, proj)
+}
+
+func (api *ApiHandler) getProjectByIDHandler(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -62,7 +81,7 @@ func (api *ApiHandler) getProjectHandler(ctx *gin.Context) {
 		return
 	}
 
-	proj, err := api.projectService.GetProject(ctx, id)
+	proj, err := api.projectService.GetProjectByID(ctx, id)
 	if err != nil {
 		handleError(ctx, err)
 		return

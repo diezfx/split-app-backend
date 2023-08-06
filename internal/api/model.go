@@ -36,6 +36,9 @@ type AddTransaction struct {
 	TargetIDs       []string  `json:"TargetIDs,omitempty"`
 }
 
+type GetProjectsQueryParams struct {
+}
+
 func (t *AddTransaction) Validate() (service.Transaction, error) {
 	var err error
 	if t.Name == "" {

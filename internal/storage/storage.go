@@ -39,6 +39,19 @@ func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, err
 	return FromEntProject(proj), nil
 }
 
+func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
+	projs, err := c.entClient.Project.Query().WithTransactions().All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get project by id: %w", err)
+	}
+
+	var projectList []Project
+	for _, p := range projs {
+		projectList = append(projectList, FromEntProject(p))
+	}
+	return projectList, nil
+}
+
 func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) {
 	result, err := c.entClient.Project.Create().
 		SetID(proj.ID).

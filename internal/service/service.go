@@ -33,7 +33,7 @@ func New(projStorage ProjectStorage) *Service {
 	return &Service{projStorage: projStorage}
 }
 
-func (s *Service) GetProject(ctx context.Context, id uuid.UUID) (Project, error) {
+func (s *Service) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
 	proj, err := s.projStorage.GetProjectByID(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return Project{}, ErrProjectNotFound
@@ -42,6 +42,23 @@ func (s *Service) GetProject(ctx context.Context, id uuid.UUID) (Project, error)
 		return Project{}, fmt.Errorf("get project:%w", err)
 	}
 	return FromStorageProject(proj), nil
+}
+
+func (s *Service) GetProjects(ctx context.Context) ([]Project, error) {
+	projs, err := s.projStorage.GetProjects(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrProjectNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get project:%w", err)
+	}
+
+	var projectList = make([]Project, 0, len(projs))
+	for _, p := range projs {
+		projectList = append(projectList, FromStorageProject(p))
+	}
+
+	return projectList, nil
 }
 
 func (s *Service) AddProject(ctx context.Context, project Project) (Project, error) {
