@@ -13,21 +13,12 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString},
 		{Name: "members", Type: field.TypeJSON},
-		{Name: "transaction_project", Type: field.TypeUUID, Nullable: true},
 	}
 	// ProjectsTable holds the schema information for the "projects" table.
 	ProjectsTable = &schema.Table{
 		Name:       "projects",
 		Columns:    ProjectsColumns,
 		PrimaryKey: []*schema.Column{ProjectsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "projects_transactions_project",
-				Columns:    []*schema.Column{ProjectsColumns[3]},
-				RefColumns: []*schema.Column{TransactionsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 	}
 	// TransactionsColumns holds the columns for the "transactions" table.
 	TransactionsColumns = []*schema.Column{
@@ -37,7 +28,7 @@ var (
 		{Name: "source_id", Type: field.TypeString},
 		{Name: "transaction_type", Type: field.TypeEnum, Enums: []string{"expense", "transfer"}},
 		{Name: "target_ids", Type: field.TypeJSON},
-		{Name: "project_transactions", Type: field.TypeUUID, Nullable: true},
+		{Name: "project_transactions", Type: field.TypeUUID},
 	}
 	// TransactionsTable holds the schema information for the "transactions" table.
 	TransactionsTable = &schema.Table{
@@ -49,7 +40,7 @@ var (
 				Symbol:     "transactions_projects_transactions",
 				Columns:    []*schema.Column{TransactionsColumns[6]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 		},
 	}
@@ -61,6 +52,5 @@ var (
 )
 
 func init() {
-	ProjectsTable.ForeignKeys[0].RefTable = TransactionsTable
 	TransactionsTable.ForeignKeys[0].RefTable = ProjectsTable
 }

@@ -40,6 +40,8 @@ func HTTPLoggingMiddleware() gin.HandlerFunc {
 		if statusCode > httpSuccessThreshold {
 			if json.Valid(requestBody) {
 				log = log.RawJSON("request_body", requestBody)
+			} else {
+				log = log.String("request_body", string(requestBody))
 			}
 			if json.Valid(responseBody) {
 				log = log.RawJSON("response_body", responseBody)

@@ -538,8 +538,7 @@ type TransactionMutation struct {
 	target_ids       *[]string
 	appendtarget_ids []string
 	clearedFields    map[string]struct{}
-	project          map[uuid.UUID]struct{}
-	removedproject   map[uuid.UUID]struct{}
+	project          *uuid.UUID
 	clearedproject   bool
 	done             bool
 	oldValue         func(context.Context) (*Transaction, error)
@@ -865,14 +864,9 @@ func (m *TransactionMutation) ResetTargetIds() {
 	m.appendtarget_ids = nil
 }
 
-// AddProjectIDs adds the "project" edge to the Project entity by ids.
-func (m *TransactionMutation) AddProjectIDs(ids ...uuid.UUID) {
-	if m.project == nil {
-		m.project = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.project[ids[i]] = struct{}{}
-	}
+// SetProjectID sets the "project" edge to the Project entity by id.
+func (m *TransactionMutation) SetProjectID(id uuid.UUID) {
+	m.project = &id
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -885,29 +879,20 @@ func (m *TransactionMutation) ProjectCleared() bool {
 	return m.clearedproject
 }
 
-// RemoveProjectIDs removes the "project" edge to the Project entity by IDs.
-func (m *TransactionMutation) RemoveProjectIDs(ids ...uuid.UUID) {
-	if m.removedproject == nil {
-		m.removedproject = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.project, ids[i])
-		m.removedproject[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedProject returns the removed IDs of the "project" edge to the Project entity.
-func (m *TransactionMutation) RemovedProjectIDs() (ids []uuid.UUID) {
-	for id := range m.removedproject {
-		ids = append(ids, id)
+// ProjectID returns the "project" edge ID in the mutation.
+func (m *TransactionMutation) ProjectID() (id uuid.UUID, exists bool) {
+	if m.project != nil {
+		return *m.project, true
 	}
 	return
 }
 
 // ProjectIDs returns the "project" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProjectID instead. It exists only for internal usage by the builders.
 func (m *TransactionMutation) ProjectIDs() (ids []uuid.UUID) {
-	for id := range m.project {
-		ids = append(ids, id)
+	if id := m.project; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -916,7 +901,6 @@ func (m *TransactionMutation) ProjectIDs() (ids []uuid.UUID) {
 func (m *TransactionMutation) ResetProject() {
 	m.project = nil
 	m.clearedproject = false
-	m.removedproject = nil
 }
 
 // Where appends a list predicates to the TransactionMutation builder.
@@ -1147,11 +1131,9 @@ func (m *TransactionMutation) AddedEdges() []string {
 func (m *TransactionMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case transaction.EdgeProject:
-		ids := make([]ent.Value, 0, len(m.project))
-		for id := range m.project {
-			ids = append(ids, id)
+		if id := m.project; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
@@ -1159,23 +1141,12 @@ func (m *TransactionMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TransactionMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removedproject != nil {
-		edges = append(edges, transaction.EdgeProject)
-	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *TransactionMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case transaction.EdgeProject:
-		ids := make([]ent.Value, 0, len(m.removedproject))
-		for id := range m.removedproject {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
@@ -1202,6 +1173,9 @@ func (m *TransactionMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *TransactionMutation) ClearEdge(name string) error {
 	switch name {
+	case transaction.EdgeProject:
+		m.ClearProject()
+		return nil
 	}
 	return fmt.Errorf("unknown Transaction unique edge %s", name)
 }

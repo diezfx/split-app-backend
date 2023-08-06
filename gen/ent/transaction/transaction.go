@@ -29,12 +29,12 @@ const (
 	// Table holds the table name of the transaction in the database.
 	Table = "transactions"
 	// ProjectTable is the table that holds the project relation/edge.
-	ProjectTable = "projects"
+	ProjectTable = "transactions"
 	// ProjectInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectInverseTable = "projects"
 	// ProjectColumn is the table column denoting the project relation/edge.
-	ProjectColumn = "transaction_project"
+	ProjectColumn = "project_transactions"
 )
 
 // Columns holds all SQL columns for transaction fields.
@@ -119,23 +119,16 @@ func ByTransactionType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTransactionType, opts...).ToFunc()
 }
 
-// ByProjectCount orders the results by project count.
-func ByProjectCount(opts ...sql.OrderTermOption) OrderOption {
+// ByProjectField orders the results by project field.
+func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newProjectStep(), opts...)
-	}
-}
-
-// ByProject orders the results by project terms.
-func ByProject(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newProjectStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProjectInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ProjectTable, ProjectColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, ProjectTable, ProjectColumn),
 	)
 }

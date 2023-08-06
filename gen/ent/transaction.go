@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/diezfx/split-app-backend/gen/ent/project"
 	"github.com/diezfx/split-app-backend/gen/ent/transaction"
 	"github.com/google/uuid"
 )
@@ -38,16 +39,20 @@ type Transaction struct {
 // TransactionEdges holds the relations/edges for other nodes in the graph.
 type TransactionEdges struct {
 	// Project holds the value of the project edge.
-	Project []*Project `json:"project,omitempty"`
+	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
 // ProjectOrErr returns the Project value or an error if the edge
-// was not loaded in eager-loading.
-func (e TransactionEdges) ProjectOrErr() ([]*Project, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e TransactionEdges) ProjectOrErr() (*Project, error) {
 	if e.loadedTypes[0] {
+		if e.Project == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: project.Label}
+		}
 		return e.Project, nil
 	}
 	return nil, &NotLoadedError{edge: "project"}

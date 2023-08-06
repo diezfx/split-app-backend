@@ -24,9 +24,8 @@ type Project struct {
 	Members []string `json:"members,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectQuery when eager-loading is set.
-	Edges               ProjectEdges `json:"edges"`
-	transaction_project *uuid.UUID
-	selectValues        sql.SelectValues
+	Edges        ProjectEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // ProjectEdges holds the relations/edges for other nodes in the graph.
@@ -58,8 +57,6 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case project.FieldID:
 			values[i] = new(uuid.UUID)
-		case project.ForeignKeys[0]: // transaction_project
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -94,13 +91,6 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &pr.Members); err != nil {
 					return fmt.Errorf("unmarshal field members: %w", err)
 				}
-			}
-		case project.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field transaction_project", values[i])
-			} else if value.Valid {
-				pr.transaction_project = new(uuid.UUID)
-				*pr.transaction_project = *value.S.(*uuid.UUID)
 			}
 		default:
 			pr.selectValues.Set(columns[i], values[i])

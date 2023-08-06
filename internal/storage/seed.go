@@ -50,20 +50,15 @@ func (c *Client) Seed() error {
 		c.entClient.Transaction.Create().
 			SetID(id1).SetName("transaction1").SetAmount(25).SetSourceID("user1").
 			SetTransactionType(transaction.TransactionTypeExpense).
-			SetTargetIds([]string{"user2"}),
+			SetTargetIds([]string{"user2"}).SetProjectID(id),
 		c.entClient.Transaction.Create().
 			SetID(id2).SetName("transaction2").SetAmount(100).SetSourceID("user2").
 			SetTransactionType(transaction.TransactionTypeExpense).
-			SetTargetIds([]string{"user3"}),
+			SetTargetIds([]string{"user3"}).SetProjectID(id),
 	}
 	err = c.entClient.Transaction.CreateBulk(transactions...).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("store transactions: %w", err)
-	}
-
-	err = r.Update().AddTransactionIDs(id1, id2).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("connect transactions to project")
 	}
 
 	return nil

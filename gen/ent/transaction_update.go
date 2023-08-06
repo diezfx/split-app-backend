@@ -12,9 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/diezfx/split-app-backend/gen/ent/predicate"
-	"github.com/diezfx/split-app-backend/gen/ent/project"
 	"github.com/diezfx/split-app-backend/gen/ent/transaction"
-	"github.com/google/uuid"
 )
 
 // TransactionUpdate is the builder for updating Transaction entities.
@@ -73,45 +71,9 @@ func (tu *TransactionUpdate) AppendTargetIds(s []string) *TransactionUpdate {
 	return tu
 }
 
-// AddProjectIDs adds the "project" edge to the Project entity by IDs.
-func (tu *TransactionUpdate) AddProjectIDs(ids ...uuid.UUID) *TransactionUpdate {
-	tu.mutation.AddProjectIDs(ids...)
-	return tu
-}
-
-// AddProject adds the "project" edges to the Project entity.
-func (tu *TransactionUpdate) AddProject(p ...*Project) *TransactionUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return tu.AddProjectIDs(ids...)
-}
-
 // Mutation returns the TransactionMutation object of the builder.
 func (tu *TransactionUpdate) Mutation() *TransactionMutation {
 	return tu.mutation
-}
-
-// ClearProject clears all "project" edges to the Project entity.
-func (tu *TransactionUpdate) ClearProject() *TransactionUpdate {
-	tu.mutation.ClearProject()
-	return tu
-}
-
-// RemoveProjectIDs removes the "project" edge to Project entities by IDs.
-func (tu *TransactionUpdate) RemoveProjectIDs(ids ...uuid.UUID) *TransactionUpdate {
-	tu.mutation.RemoveProjectIDs(ids...)
-	return tu
-}
-
-// RemoveProject removes "project" edges to Project entities.
-func (tu *TransactionUpdate) RemoveProject(p ...*Project) *TransactionUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return tu.RemoveProjectIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -147,6 +109,9 @@ func (tu *TransactionUpdate) check() error {
 		if err := transaction.TransactionTypeValidator(v); err != nil {
 			return &ValidationError{Name: "transaction_type", err: fmt.Errorf(`ent: validator failed for field "Transaction.transaction_type": %w`, err)}
 		}
+	}
+	if _, ok := tu.mutation.ProjectID(); tu.mutation.ProjectCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Transaction.project"`)
 	}
 	return nil
 }
@@ -185,51 +150,6 @@ func (tu *TransactionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, transaction.FieldTargetIds, value)
 		})
-	}
-	if tu.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   transaction.ProjectTable,
-			Columns: []string{transaction.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := tu.mutation.RemovedProjectIDs(); len(nodes) > 0 && !tu.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   transaction.ProjectTable,
-			Columns: []string{transaction.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := tu.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   transaction.ProjectTable,
-			Columns: []string{transaction.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -294,45 +214,9 @@ func (tuo *TransactionUpdateOne) AppendTargetIds(s []string) *TransactionUpdateO
 	return tuo
 }
 
-// AddProjectIDs adds the "project" edge to the Project entity by IDs.
-func (tuo *TransactionUpdateOne) AddProjectIDs(ids ...uuid.UUID) *TransactionUpdateOne {
-	tuo.mutation.AddProjectIDs(ids...)
-	return tuo
-}
-
-// AddProject adds the "project" edges to the Project entity.
-func (tuo *TransactionUpdateOne) AddProject(p ...*Project) *TransactionUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return tuo.AddProjectIDs(ids...)
-}
-
 // Mutation returns the TransactionMutation object of the builder.
 func (tuo *TransactionUpdateOne) Mutation() *TransactionMutation {
 	return tuo.mutation
-}
-
-// ClearProject clears all "project" edges to the Project entity.
-func (tuo *TransactionUpdateOne) ClearProject() *TransactionUpdateOne {
-	tuo.mutation.ClearProject()
-	return tuo
-}
-
-// RemoveProjectIDs removes the "project" edge to Project entities by IDs.
-func (tuo *TransactionUpdateOne) RemoveProjectIDs(ids ...uuid.UUID) *TransactionUpdateOne {
-	tuo.mutation.RemoveProjectIDs(ids...)
-	return tuo
-}
-
-// RemoveProject removes "project" edges to Project entities.
-func (tuo *TransactionUpdateOne) RemoveProject(p ...*Project) *TransactionUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return tuo.RemoveProjectIDs(ids...)
 }
 
 // Where appends a list predicates to the TransactionUpdate builder.
@@ -381,6 +265,9 @@ func (tuo *TransactionUpdateOne) check() error {
 		if err := transaction.TransactionTypeValidator(v); err != nil {
 			return &ValidationError{Name: "transaction_type", err: fmt.Errorf(`ent: validator failed for field "Transaction.transaction_type": %w`, err)}
 		}
+	}
+	if _, ok := tuo.mutation.ProjectID(); tuo.mutation.ProjectCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Transaction.project"`)
 	}
 	return nil
 }
@@ -436,51 +323,6 @@ func (tuo *TransactionUpdateOne) sqlSave(ctx context.Context) (_node *Transactio
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, transaction.FieldTargetIds, value)
 		})
-	}
-	if tuo.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   transaction.ProjectTable,
-			Columns: []string{transaction.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := tuo.mutation.RemovedProjectIDs(); len(nodes) > 0 && !tuo.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   transaction.ProjectTable,
-			Columns: []string{transaction.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := tuo.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   transaction.ProjectTable,
-			Columns: []string{transaction.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Transaction{config: tuo.config}
 	_spec.Assign = _node.assignValues

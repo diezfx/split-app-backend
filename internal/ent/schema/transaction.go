@@ -26,7 +26,9 @@ func (Transaction) Fields() []ent.Field {
 
 func (Transaction) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("project", Project.Type),
+		edge.From("project", Project.Type).
+			Ref("transactions").
+			Required().Immutable().Unique(),
 	}
 }
 

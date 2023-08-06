@@ -434,7 +434,7 @@ func (c *TransactionClient) QueryProject(t *Transaction) *ProjectQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(transaction.Table, transaction.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, transaction.ProjectTable, transaction.ProjectColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, transaction.ProjectTable, transaction.ProjectColumn),
 		)
 		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
 		return fromV, nil

@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -76,7 +75,7 @@ func (tq *TransactionQuery) QueryProject() *ProjectQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(transaction.Table, transaction.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, transaction.ProjectTable, transaction.ProjectColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, transaction.ProjectTable, transaction.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 		return fromU, nil
@@ -377,6 +376,9 @@ func (tq *TransactionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			tq.withProject != nil,
 		}
 	)
+	if tq.withProject != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, transaction.ForeignKeys...)
 	}
@@ -399,9 +401,8 @@ func (tq *TransactionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		return nodes, nil
 	}
 	if query := tq.withProject; query != nil {
-		if err := tq.loadProject(ctx, query, nodes,
-			func(n *Transaction) { n.Edges.Project = []*Project{} },
-			func(n *Transaction, e *Project) { n.Edges.Project = append(n.Edges.Project, e) }); err != nil {
+		if err := tq.loadProject(ctx, query, nodes, nil,
+			func(n *Transaction, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -409,33 +410,34 @@ func (tq *TransactionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 }
 
 func (tq *TransactionQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*Transaction, init func(*Transaction), assign func(*Transaction, *Project)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Transaction)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Transaction)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
+		if nodes[i].project_transactions == nil {
+			continue
 		}
+		fk := *nodes[i].project_transactions
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.withFKs = true
-	query.Where(predicate.Project(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(transaction.ProjectColumn), fks...))
-	}))
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.transaction_project
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "transaction_project" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "transaction_project" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "project_transactions" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }

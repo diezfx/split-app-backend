@@ -58,7 +58,7 @@ func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transa
 		SetName(transaction.Name).
 		SetAmount(transaction.Amount.Amount()).
 		SetSourceID(transaction.SourceID).SetTransactionType(transaction.TransactionType).
-		SetTargetIds(transaction.TargetIDs).AddProjectIDs(projectID).Save(ctx)
+		SetTargetIds(transaction.TargetIDs).SetProjectID(projectID).Save(ctx)
 	if err != nil {
 		return fmt.Errorf("add transaction to db: %w", err)
 	}

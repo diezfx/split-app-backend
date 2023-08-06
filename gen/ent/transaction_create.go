@@ -57,19 +57,15 @@ func (tc *TransactionCreate) SetID(u uuid.UUID) *TransactionCreate {
 	return tc
 }
 
-// AddProjectIDs adds the "project" edge to the Project entity by IDs.
-func (tc *TransactionCreate) AddProjectIDs(ids ...uuid.UUID) *TransactionCreate {
-	tc.mutation.AddProjectIDs(ids...)
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (tc *TransactionCreate) SetProjectID(id uuid.UUID) *TransactionCreate {
+	tc.mutation.SetProjectID(id)
 	return tc
 }
 
-// AddProject adds the "project" edges to the Project entity.
-func (tc *TransactionCreate) AddProject(p ...*Project) *TransactionCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return tc.AddProjectIDs(ids...)
+// SetProject sets the "project" edge to the Project entity.
+func (tc *TransactionCreate) SetProject(p *Project) *TransactionCreate {
+	return tc.SetProjectID(p.ID)
 }
 
 // Mutation returns the TransactionMutation object of the builder.
@@ -125,6 +121,9 @@ func (tc *TransactionCreate) check() error {
 	}
 	if _, ok := tc.mutation.TargetIds(); !ok {
 		return &ValidationError{Name: "target_ids", err: errors.New(`ent: missing required field "Transaction.target_ids"`)}
+	}
+	if _, ok := tc.mutation.ProjectID(); !ok {
+		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "Transaction.project"`)}
 	}
 	return nil
 }
@@ -183,8 +182,8 @@ func (tc *TransactionCreate) createSpec() (*Transaction, *sqlgraph.CreateSpec) {
 	}
 	if nodes := tc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
 			Table:   transaction.ProjectTable,
 			Columns: []string{transaction.ProjectColumn},
 			Bidi:    false,
@@ -195,6 +194,7 @@ func (tc *TransactionCreate) createSpec() (*Transaction, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.project_transactions = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
