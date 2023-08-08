@@ -27,6 +27,14 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	mr := gin.New()
 	mr.Use(gin.Recovery())
 
+	mr.Use(cors.New(cors.Config{
+		AllowMethods:     []string{"GET", "PUT", "PATCH", "POST", "OPTION"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowAllOrigins:  true,
+		MaxAge:           12 * time.Hour,
+	}))
 	r := mr.Group("/api/v1.0/")
 	r.Use(middleware.HTTPLoggingMiddleware())
 
@@ -36,15 +44,6 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	r.GET("projects", apiHandler.getProjectsHandler)
 	r.POST("projects", apiHandler.addProjectHandler)
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
-
-	mr.Use(cors.New(cors.Config{
-		AllowMethods:     []string{"PUT", "PATCH", "POST", "OPTION"},
-		AllowHeaders:     []string{"Origin"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		AllowAllOrigins:  true,
-		MaxAge:           12 * time.Hour,
-	}))
 
 	return &http.Server{
 		Handler: mr,
@@ -70,7 +69,13 @@ func (api *ApiHandler) getProjectsHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, proj)
+	projectList := make([]Project, 0, len(proj))
+	for _, p := range proj {
+		projectList = append(projectList, ProjectFromServiceProject(p))
+	}
+
+	ctx.Header("Access-Control-Allow-Origin", "*")
+	ctx.JSON(http.StatusOK, projectList)
 }
 
 func (api *ApiHandler) getProjectByIDHandler(ctx *gin.Context) {
@@ -87,7 +92,8 @@ func (api *ApiHandler) getProjectByIDHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, proj)
+	ctx.Header("Access-Control-Allow-Origin", "*")
+	ctx.JSON(http.StatusOK, ProjectFromServiceProject(proj))
 }
 
 func (api *ApiHandler) addTransactionHandler(ctx *gin.Context) {

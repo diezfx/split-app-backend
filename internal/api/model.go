@@ -71,3 +71,38 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 		TargetIDs:       t.TargetIDs}, err
 
 }
+
+type Transaction struct {
+	ID              uuid.UUID
+	Name            string
+	TransactionType service.TransactionType
+	Amount          float64
+	SourceID        string
+	TargetIDs       []string
+}
+
+func TransactionFromServiceTransaction(t service.Transaction) Transaction {
+	return Transaction{ID: t.ID,
+		Name:            t.Name,
+		TransactionType: t.TransactionType,
+		Amount:          t.Amount.AsMajorUnits(),
+		SourceID:        t.SourceID,
+		TargetIDs:       t.TargetIDs,
+	}
+}
+
+type Project struct {
+	ID           uuid.UUID
+	Name         string
+	Transactions []Transaction
+	Members      []string
+}
+
+func ProjectFromServiceProject(p service.Project) Project {
+	transactions := make([]Transaction, 0, len(p.Transactions))
+	for _, t := range p.Transactions {
+		transactions = append(transactions, TransactionFromServiceTransaction(t))
+	}
+	return Project{ID: p.ID, Name: p.Name, Transactions: transactions, Members: p.Members}
+
+}
