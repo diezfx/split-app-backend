@@ -17,5 +17,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v4
         with:
+          file: deployment/Dockerfile
           push: true
           tags: ${{github.repository}}:latest
