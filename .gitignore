@@ -21,3 +21,5 @@
 go.work
 
 ent.db
+
+.env

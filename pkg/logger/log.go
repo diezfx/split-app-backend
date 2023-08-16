@@ -3,6 +3,7 @@ package logger
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -10,6 +11,10 @@ import (
 )
 
 var _ Log = &logger{}
+
+func SetConsolLogger() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+}
 
 type Log interface {
 	RawJSON(key string, value []byte) Log

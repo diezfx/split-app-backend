@@ -1,4 +1,4 @@
-GOLANG_CI_VERSION=v1.53.1
+GOLANG_CI_VERSION=v1.54.0
 
 generate:
 	go generate ./...
@@ -13,5 +13,9 @@ test:
 lint: 
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./.bin $(GOLANG_CI_VERSION) 
 	./.bin/golangci-lint run -c ./.golangci.yml
+
+
+docker/build:
+	docker build . -t ghcr.io/diezfx/split-backend-app:latest -f "deployment/Dockerfile" --build-arg="APP_NAME=split-app-backend"
 
 
