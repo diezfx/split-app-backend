@@ -100,7 +100,8 @@ func compareEdges(t *testing.T, actual, expected []Edge) {
 		for _, actualEdge := range actual {
 			if expectedEdge.Source == actualEdge.Source && expectedEdge.Target == actualEdge.Target {
 				if expectedEdge.Amount.Amount() != actualEdge.Amount.Amount() {
-					t.Errorf("expected amount %s for edge (%s:%s) got %s", expectedEdge.Amount.Display(), expectedEdge.Source, expectedEdge.Target, actualEdge.Amount.Display())
+					t.Errorf("expected amount %s for edge (%s:%s) got %s", expectedEdge.Amount.Display(),
+						expectedEdge.Source, expectedEdge.Target, actualEdge.Amount.Display())
 				}
 				foundEdge = true
 				break

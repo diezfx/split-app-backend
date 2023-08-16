@@ -15,12 +15,12 @@ import (
 	"github.com/google/uuid"
 )
 
-type ApiHandler struct {
+type APIHandler struct {
 	projectService ProjectService
 }
 
-func newAPIHandler(projectService ProjectService) *ApiHandler {
-	return &ApiHandler{projectService: projectService}
+func newAPIHandler(projectService ProjectService) *APIHandler {
+	return &APIHandler{projectService: projectService}
 }
 
 func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
@@ -54,8 +54,7 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	}
 }
 
-func (api *ApiHandler) getProjectsHandler(ctx *gin.Context) {
-
+func (api *APIHandler) getProjectsHandler(ctx *gin.Context) {
 	var queryParams GetProjectsQueryParams
 	err := ctx.BindQuery(&queryParams)
 	if err != nil {
@@ -78,7 +77,7 @@ func (api *ApiHandler) getProjectsHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, projectList)
 }
 
-func (api *ApiHandler) getProjectByIDHandler(ctx *gin.Context) {
+func (api *APIHandler) getProjectByIDHandler(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -96,8 +95,7 @@ func (api *ApiHandler) getProjectByIDHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ProjectFromServiceProject(proj))
 }
 
-func (api *ApiHandler) addTransactionHandler(ctx *gin.Context) {
-
+func (api *APIHandler) addTransactionHandler(ctx *gin.Context) {
 	var transaction AddTransaction
 	if err := ctx.BindJSON(&transaction); err != nil {
 		handleError(ctx, fmt.Errorf("parse add transaction body: %w: %w", errInvalidInput, err))
@@ -126,7 +124,7 @@ func (api *ApiHandler) addTransactionHandler(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
-func (api *ApiHandler) addProjectHandler(ctx *gin.Context) {
+func (api *APIHandler) addProjectHandler(ctx *gin.Context) {
 	var body AddProject
 	err := ctx.BindJSON(&body)
 	if err != nil {

@@ -36,9 +36,9 @@ func SetupSplitService() (*http.Server, error) {
 		return nil, fmt.Errorf("create storage client: %w", err)
 	}
 
-	service := service.New(storageClient)
+	svc := service.New(storageClient)
 
-	router := api.InitAPI(cfg, service)
+	router := api.InitAPI(cfg, svc)
 
 	srv := &http.Server{
 		Handler: router.Handler,

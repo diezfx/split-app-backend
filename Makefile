@@ -13,6 +13,9 @@ test:
 lint: 
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./.bin $(GOLANG_CI_VERSION) 
 	./.bin/golangci-lint run -c ./.golangci.yml
+lint/fix: 
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./.bin $(GOLANG_CI_VERSION) 
+	./.bin/golangci-lint run -c ./.golangci.yml --fix
 
 
 docker/build:
