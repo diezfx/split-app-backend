@@ -20,3 +20,4 @@ jobs:
           file: deployment/Dockerfile
           push: true
           tags: ${{github.repository}}:latest
+          build-args: APP_NAME=split-app-backend
