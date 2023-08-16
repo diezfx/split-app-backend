@@ -64,14 +64,13 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 	return FromEntProject(result), nil
 }
 
-func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transaction Transaction) error {
-
+func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, tx Transaction) error {
 	_, err := c.entClient.Transaction.Create().
-		SetID(transaction.ID).
-		SetName(transaction.Name).
-		SetAmount(transaction.Amount.Amount()).
-		SetSourceID(transaction.SourceID).SetTransactionType(transaction.TransactionType).
-		SetTargetIds(transaction.TargetIDs).SetProjectID(projectID).Save(ctx)
+		SetID(tx.ID).
+		SetName(tx.Name).
+		SetAmount(tx.Amount.Amount()).
+		SetSourceID(tx.SourceID).SetTransactionType(tx.TransactionType).
+		SetTargetIds(tx.TargetIDs).SetProjectID(projectID).Save(ctx)
 	if err != nil {
 		return fmt.Errorf("add transaction to db: %w", err)
 	}

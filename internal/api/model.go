@@ -42,24 +42,24 @@ type GetProjectsQueryParams struct {
 func (t *AddTransaction) Validate() (service.Transaction, error) {
 	var err error
 	if t.Name == "" {
-		errors.Join(err, NewInvalidArgumentError("Name"))
+		err = errors.Join(err, NewInvalidArgumentError("Name"))
 	}
 	transactionType := service.ConvertToTransactionType(t.TransactionType)
 	if transactionType == service.Undefined {
-		errors.Join(err, NewInvalidArgumentError("TransactionType"))
+		err = errors.Join(err, NewInvalidArgumentError("TransactionType"))
 	}
 
 	if t.Amount <= 0 {
-		errors.Join(err, NewInvalidArgumentError("Amount"))
+		err = errors.Join(err, NewInvalidArgumentError("Amount"))
 	}
 	amount := money.NewFromFloat(t.Amount, money.EUR)
 
 	if t.SourceID == "" {
-		errors.Join(err, NewInvalidArgumentError("SourceID"))
+		err = errors.Join(err, NewInvalidArgumentError("SourceID"))
 	}
 
 	if len(t.TargetIDs) < 1 {
-		errors.Join(err, NewInvalidArgumentError("TargetIDs"))
+		err = errors.Join(err, NewInvalidArgumentError("TargetIDs"))
 	}
 
 	return service.Transaction{
@@ -69,7 +69,6 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 		Amount:          amount,
 		SourceID:        t.SourceID,
 		TargetIDs:       t.TargetIDs}, err
-
 }
 
 type Transaction struct {
@@ -104,5 +103,4 @@ func ProjectFromServiceProject(p service.Project) Project {
 		transactions = append(transactions, TransactionFromServiceTransaction(t))
 	}
 	return Project{ID: p.ID, Name: p.Name, Transactions: transactions, Members: p.Members}
-
 }
