@@ -101,7 +101,6 @@ func getMaxCreditor(userBalance map[string]*money.Money) string {
 			creditor = user
 		}
 	}
-
 	return creditor
 }
 
