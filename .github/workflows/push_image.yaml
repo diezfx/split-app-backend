@@ -28,5 +28,5 @@ jobs:
         with:
           file: deployment/Dockerfile
           push: true
-          tags: ${{github.repository}}:latest
+          tags: ghcr.io/${{github.repository}}:latest
           build-args: APP_NAME=split-app-backend
