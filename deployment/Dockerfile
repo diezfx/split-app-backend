@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM golang:1.21 AS builder
 ARG APP_NAME
 # Set destination for COPY
@@ -8,7 +10,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . ./
-RUN ls 
 # Build
 RUN go build -o /app/out/$APP_NAME /app/cmd/$APP_NAME/main.go
 

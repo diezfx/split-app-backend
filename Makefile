@@ -10,11 +10,11 @@ fmt:
 test:
 	go test ./... -v
 
-lint: 
+lint/download:
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./.bin $(GOLANG_CI_VERSION) 
+lint: lint/download
 	./.bin/golangci-lint run -c ./.golangci.yml
-lint/fix: 
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./.bin $(GOLANG_CI_VERSION) 
+lint/fix: lint/download
 	./.bin/golangci-lint run -c ./.golangci.yml --fix
 
 
