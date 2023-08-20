@@ -20,5 +20,8 @@ lint/fix: lint/download
 
 docker/build:
 	docker build . -t ghcr.io/diezfx/split-app-backend:latest -f "deployment/Dockerfile" --build-arg="APP_NAME=split-app-backend"
+docker/push: docker/build
+	docker push ghcr.io/diezfx/split-app-backend:latest
+
 
 
