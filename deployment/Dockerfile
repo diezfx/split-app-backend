@@ -14,7 +14,7 @@ COPY . ./
 RUN go build -o /app/out/app /app/cmd/$APP_NAME/main.go
 
 
-FROM debian:bullseye-slim as runner
+FROM debian:bookworm-slim as runner
 COPY --from=builder /app/out/app /app/app
 # Run
 CMD ["/app/app"]
