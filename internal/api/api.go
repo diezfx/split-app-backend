@@ -26,7 +26,7 @@ func newAPIHandler(projectService ProjectService) *APIHandler {
 func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	mr := gin.New()
 	mr.Use(gin.Recovery())
-
+	mr.Use(middleware.HTTPLoggingMiddleware())
 	mr.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "PATCH", "POST", "OPTION"},
 		AllowHeaders:     []string{"Origin"},
@@ -36,7 +36,6 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 		MaxAge:           12 * time.Hour,
 	}))
 	r := mr.Group("/api/v1.0/")
-	r.Use(middleware.HTTPLoggingMiddleware())
 
 	apiHandler := newAPIHandler(projectService)
 
