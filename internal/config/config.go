@@ -26,7 +26,7 @@ func Load() Config {
 	env := os.Getenv("ENVIRONMENT")
 	if env == string(DevelopmentEnv) {
 		return Config{
-			Addr:        "localhost:8080",
+			Addr:        "localhost:80",
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
 			DB:          sqlite.Config{Path: "ent.db", InMemory: false},
