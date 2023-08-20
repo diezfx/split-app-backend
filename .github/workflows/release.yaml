@@ -39,6 +39,7 @@ jobs:
           context: .
           file: deployment/Dockerfile
           platforms: ${{ matrix.platform }}
+          provenance: false
           push: true
           build-args: APP_NAME=split-app-backend
           tags: ${{ steps.meta.outputs.tags }}
