@@ -1,6 +1,10 @@
 package config
 
-import "github.com/diezfx/split-app-backend/pkg/sqlite"
+import (
+	"os"
+
+	"github.com/diezfx/split-app-backend/pkg/sqlite"
+)
 
 type Environment string
 
@@ -18,6 +22,17 @@ type Config struct {
 }
 
 func Load() Config {
+
+	env := os.Getenv("ENVIRONMENT")
+	if env == string(DevelopmentEnv) {
+		return Config{
+			Addr:        "localhost:8080",
+			Environment: DevelopmentEnv,
+			LogLevel:    "debug",
+			DB:          sqlite.Config{Path: "ent.db", InMemory: false},
+		}
+	}
+
 	return Config{
 		Addr:        "localhost:5002",
 		Environment: LocalEnv,
