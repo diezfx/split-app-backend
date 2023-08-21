@@ -17,4 +17,5 @@ RUN go build -o /app/out/app /app/cmd/$APP_NAME/main.go
 FROM debian:bookworm-slim as runner
 COPY --from=builder /app/out/app /app
 # Run
+EXPOSE 80
 CMD ["/app"]
