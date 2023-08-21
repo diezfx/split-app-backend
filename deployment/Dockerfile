@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.2
 
 FROM golang:1.21 AS builder
 ARG APP_NAME
@@ -17,5 +17,4 @@ RUN go build -o /app/out/app /app/cmd/$APP_NAME/main.go
 FROM debian:bookworm-slim as runner
 COPY --from=builder /app/out/app /app
 # Run
-EXPOSE 80
 CMD ["/app"]
