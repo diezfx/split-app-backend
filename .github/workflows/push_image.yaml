@@ -53,5 +53,5 @@ jobs:
           provenance: false
           push: true
           build-args: APP_NAME=split-app-backend
-          tags: ${{ steps.meta.outputs.tags }}, ${{ steps.prep.outputs.BUILD_ID }}
+          tags: ${{ steps.meta.outputs.tags }}, ghcr.io/${{github.repository}}:${{ steps.prep.outputs.BUILD_ID }}
           labels: ${{ steps.meta.outputs.labels }}
