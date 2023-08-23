@@ -22,7 +22,6 @@ type Config struct {
 }
 
 func Load() Config {
-
 	env := os.Getenv("ENVIRONMENT")
 	if env == string(DevelopmentEnv) {
 		return Config{
