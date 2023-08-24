@@ -36,8 +36,7 @@ type AddTransaction struct {
 	TargetIDs       []string  `json:"TargetIDs,omitempty"`
 }
 
-type GetProjectsQueryParams struct {
-}
+type GetProjectsQueryParams struct{}
 
 func (t *AddTransaction) Validate() (service.Transaction, error) {
 	var err error
@@ -68,7 +67,8 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 		TransactionType: transactionType,
 		Amount:          amount,
 		SourceID:        t.SourceID,
-		TargetIDs:       t.TargetIDs}, err
+		TargetIDs:       t.TargetIDs,
+	}, err
 }
 
 type Transaction struct {
@@ -81,7 +81,8 @@ type Transaction struct {
 }
 
 func TransactionFromServiceTransaction(t service.Transaction) Transaction {
-	return Transaction{ID: t.ID,
+	return Transaction{
+		ID:              t.ID,
 		Name:            t.Name,
 		TransactionType: t.TransactionType,
 		Amount:          t.Amount.AsMajorUnits(),

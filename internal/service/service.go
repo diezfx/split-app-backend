@@ -53,7 +53,7 @@ func (s *Service) GetProjects(ctx context.Context) ([]Project, error) {
 		return nil, fmt.Errorf("get project:%w", err)
 	}
 
-	var projectList = make([]Project, 0, len(projs))
+	projectList := make([]Project, 0, len(projs))
 	for _, p := range projs {
 		projectList = append(projectList, FromStorageProject(p))
 	}
