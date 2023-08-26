@@ -22,18 +22,18 @@ func NewInvalidArgumentError(arg string) *InvalidArgumentError {
 }
 
 type AddProject struct {
-	ID      string   `json:"ID,omitempty"`
-	Name    string   `json:"Name,omitempty"`
-	Members []string `json:"Members,omitempty"`
+	ID      string   `json:"id,omitempty"`
+	Name    string   `json:"name,omitempty"`
+	Members []string `json:"members,omitempty"`
 }
 
 type AddTransaction struct {
-	ID              uuid.UUID `json:"ID,omitempty"`
-	Name            string    `json:"Name,omitempty"`
-	TransactionType string    `json:"TransactionType,omitempty"`
-	Amount          float64   `json:"Amount,omitempty"`
-	SourceID        string    `json:"SourceID,omitempty"`
-	TargetIDs       []string  `json:"TargetIDs,omitempty"`
+	ID              uuid.UUID `json:"id,omitempty"`
+	Name            string    `json:"name,omitempty"`
+	TransactionType string    `json:"transactionType,omitempty"`
+	Amount          float64   `json:"amount,omitempty"`
+	SourceID        string    `json:"sourceID,omitempty"`
+	TargetIDs       []string  `json:"targetIDs,omitempty"`
 }
 
 type GetProjectsQueryParams struct{}
@@ -72,12 +72,12 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 }
 
 type Transaction struct {
-	ID              uuid.UUID
-	Name            string
-	TransactionType service.TransactionType
-	Amount          float64
-	SourceID        string
-	TargetIDs       []string
+	ID              uuid.UUID               `json:"id,omitempty"`
+	Name            string                  `json:"name,omitempty"`
+	TransactionType service.TransactionType `json:"transactionType,omitempty"`
+	Amount          float64                 `json:"amount,omitempty"`
+	SourceID        string                  `json:"sourceId,omitempty"`
+	TargetIDs       []string                `json:"targetIds,omitempty"`
 }
 
 func TransactionFromServiceTransaction(t service.Transaction) Transaction {

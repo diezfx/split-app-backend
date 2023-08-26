@@ -48,9 +48,7 @@ func HTTPLoggingMiddleware() gin.HandlerFunc {
 			}
 		}
 
-		log.String("client_ip", clientIP).
-			String("method", method).
-			String("path", path).
+		log.String("path", path).
 			Int("status_code", statusCode).
 			Duration("duration", duration).
 			Msg("Request")
