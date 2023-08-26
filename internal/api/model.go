@@ -92,10 +92,10 @@ func TransactionFromServiceTransaction(t service.Transaction) Transaction {
 }
 
 type Project struct {
-	ID           uuid.UUID
-	Name         string
-	Transactions []Transaction
-	Members      []string
+	ID           uuid.UUID     `json:"id,omitempty"`
+	Name         string        `json:"name,omitempty"`
+	Transactions []Transaction `json:"transactions,omitempty"`
+	Members      []string      `json:"members,omitempty"`
 }
 
 func ProjectFromServiceProject(p service.Project) Project {
