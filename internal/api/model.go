@@ -22,18 +22,18 @@ func NewInvalidArgumentError(arg string) *InvalidArgumentError {
 }
 
 type AddProject struct {
-	ID      string   `json:"id,omitempty"`
-	Name    string   `json:"name,omitempty"`
-	Members []string `json:"members,omitempty"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Members []string `json:"members"`
 }
 
 type AddTransaction struct {
-	ID              uuid.UUID `json:"id,omitempty"`
-	Name            string    `json:"name,omitempty"`
-	TransactionType string    `json:"transactionType,omitempty"`
-	Amount          float64   `json:"amount,omitempty"`
-	SourceID        string    `json:"sourceID,omitempty"`
-	TargetIDs       []string  `json:"targetIDs,omitempty"`
+	ID              uuid.UUID `json:"id"`
+	Name            string    `json:"name"`
+	TransactionType string    `json:"transactionType"`
+	Amount          float64   `json:"amount"`
+	SourceID        string    `json:"sourceID"`
+	TargetIDs       []string  `json:"targetIDs"`
 }
 
 type GetProjectsQueryParams struct{}
@@ -72,12 +72,12 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 }
 
 type Transaction struct {
-	ID              uuid.UUID               `json:"id,omitempty"`
-	Name            string                  `json:"name,omitempty"`
-	TransactionType service.TransactionType `json:"transactionType,omitempty"`
-	Amount          float64                 `json:"amount,omitempty"`
-	SourceID        string                  `json:"sourceId,omitempty"`
-	TargetIDs       []string                `json:"targetIds,omitempty"`
+	ID              uuid.UUID               `json:"id"`
+	Name            string                  `json:"name"`
+	TransactionType service.TransactionType `json:"transactionType"`
+	Amount          float64                 `json:"amount"`
+	SourceID        string                  `json:"sourceId"`
+	TargetIDs       []string                `json:"targetIds"`
 }
 
 func TransactionFromServiceTransaction(t service.Transaction) Transaction {
@@ -92,10 +92,10 @@ func TransactionFromServiceTransaction(t service.Transaction) Transaction {
 }
 
 type Project struct {
-	ID           uuid.UUID     `json:"id,omitempty"`
-	Name         string        `json:"name,omitempty"`
-	Transactions []Transaction `json:"transactions,omitempty"`
-	Members      []string      `json:"members,omitempty"`
+	ID           uuid.UUID     `json:"id"`
+	Name         string        `json:"name"`
+	Transactions []Transaction `json:"transactions"`
+	Members      []string      `json:"members"`
 }
 
 func ProjectFromServiceProject(p service.Project) Project {
