@@ -9,6 +9,7 @@ jobs:
       matrix:
         platform:
           - linux/amd64
+          - linux/arm64
     name: build-image
     runs-on: ubuntu-latest
     steps:
