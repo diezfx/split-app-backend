@@ -5,6 +5,11 @@ on:
       - main
 jobs:
   build-image:
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
     name: build-image
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +46,7 @@ jobs:
         with:
           context: .
           file: deployment/Dockerfile
-          platforms: linux/amd64,linux/arm/v7
+          platforms: ${{ matrix.platform }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}, ghcr.io/${{github.repository}}:${{ steps.prep.outputs.BUILD_ID }}
           labels: ${{ steps.meta.outputs.labels }}
