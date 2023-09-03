@@ -41,7 +41,7 @@ jobs:
         with:
           context: .
           file: deployment/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/arm64
           push: true
           provenance: true
           build-args: APP_NAME=split-app-backend
