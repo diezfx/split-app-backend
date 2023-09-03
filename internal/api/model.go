@@ -32,8 +32,8 @@ type AddTransaction struct {
 	Name            string   `json:"name"`
 	TransactionType string   `json:"transactionType"`
 	Amount          float64  `json:"amount"`
-	SourceID        string   `json:"sourceID"`
-	TargetIDs       []string `json:"targetIDs"`
+	SourceID        string   `json:"sourceId"`
+	TargetIDs       []string `json:"targetIds"`
 }
 
 type GetProjectsQueryParams struct{}
