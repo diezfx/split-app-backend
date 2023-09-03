@@ -28,18 +28,24 @@ type AddProject struct {
 }
 
 type AddTransaction struct {
-	ID              uuid.UUID `json:"id"`
-	Name            string    `json:"name"`
-	TransactionType string    `json:"transactionType"`
-	Amount          float64   `json:"amount"`
-	SourceID        string    `json:"sourceID"`
-	TargetIDs       []string  `json:"targetIDs"`
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	TransactionType string   `json:"transactionType"`
+	Amount          float64  `json:"amount"`
+	SourceID        string   `json:"sourceID"`
+	TargetIDs       []string `json:"targetIDs"`
 }
 
 type GetProjectsQueryParams struct{}
 
 func (t *AddTransaction) Validate() (service.Transaction, error) {
 	var err error
+
+	id, err := uuid.Parse(t.ID)
+	if err != nil {
+		err = errors.Join(err, NewInvalidArgumentError("ID"))
+	}
+
 	if t.Name == "" {
 		err = errors.Join(err, NewInvalidArgumentError("Name"))
 	}
@@ -62,7 +68,7 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 	}
 
 	return service.Transaction{
-		ID:              t.ID,
+		ID:              id,
 		Name:            t.Name,
 		TransactionType: transactionType,
 		Amount:          amount,
