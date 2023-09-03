@@ -65,7 +65,7 @@ jobs:
           file: deployment/Dockerfile
           platforms: linux/arm64
           push: true
-          provenance: true
+          provenance: false
           build-args: APP_NAME=split-app-backend
           tags: ${{ needs.generate-labels.outputs.tags }}, ghcr.io/${{github.repository}}:${{ needs.generate-labels.outputs.build-id }}
           labels: ${{ needs.generate-labels.outputs.tags.outputs.labels }}
@@ -95,7 +95,7 @@ jobs:
           file: deployment/Dockerfile
           platforms: linux/amd64
           push: true
-          provenance: true
+          provenance: false
           build-args: APP_NAME=split-app-backend
           tags: ${{ needs.generate-labels.outputs.tags }}, ghcr.io/${{github.repository}}:${{ needs.generate-labels.outputs.build-id }}
           labels: ${{ needs.generate-labels.outputs.tags.outputs.labels }}
