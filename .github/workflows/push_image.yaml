@@ -28,7 +28,6 @@ jobs:
 
 
   build-image_arm:
-    name: build-image
     runs-on: self-hosted
     needs: generate-labels
     steps:
@@ -68,11 +67,10 @@ jobs:
           push: true
           provenance: true
           build-args: APP_NAME=split-app-backend
-          tags: ${{ needs.generate-labels.outputs.labels }}, ghcr.io/${{github.repository}}:${{ needs.generate-labels.outputs.tags.BUILD_ID }}
+          tags: ${{ needs.generate-labels.outputs.tags }}, ghcr.io/${{github.repository}}:${{ needs.generate-labels.outputs.build-id }}
           labels: ${{ needs.generate-labels.outputs.tags.outputs.labels }}
 
   build-image-amd:
-    name: build-image
     runs-on: ubuntu-latest
     needs: generate-labels
     steps:
