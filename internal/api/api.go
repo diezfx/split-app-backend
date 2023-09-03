@@ -101,20 +101,13 @@ func (api *APIHandler) addTransactionHandler(ctx *gin.Context) {
 		return
 	}
 
-	idStr := ctx.Param("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		handleError(ctx, fmt.Errorf("parse id: %w: %w", errInvalidInput, err))
-		return
-	}
-
 	svcTransaction, err := transaction.Validate()
 	if err != nil {
 		handleError(ctx, fmt.Errorf("validate transaction: %w: %w", errInvalidInput, err))
 		return
 	}
 
-	err = api.projectService.AddTransaction(ctx, id, svcTransaction)
+	err = api.projectService.AddTransaction(ctx, svcTransaction.ID, svcTransaction)
 	if err != nil {
 		handleError(ctx, err)
 		return
