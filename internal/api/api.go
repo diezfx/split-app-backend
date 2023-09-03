@@ -95,6 +95,14 @@ func (api *APIHandler) getProjectByIDHandler(ctx *gin.Context) {
 }
 
 func (api *APIHandler) addTransactionHandler(ctx *gin.Context) {
+
+	idStr := ctx.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("invalid projectId: %w: %w", errInvalidInput, err))
+		return
+	}
+
 	var transaction AddTransaction
 	if err := ctx.BindJSON(&transaction); err != nil {
 		handleError(ctx, fmt.Errorf("parse add transaction body: %w: %w", errInvalidInput, err))
@@ -107,7 +115,7 @@ func (api *APIHandler) addTransactionHandler(ctx *gin.Context) {
 		return
 	}
 
-	err = api.projectService.AddTransaction(ctx, svcTransaction.ID, svcTransaction)
+	err = api.projectService.AddTransaction(ctx, id, svcTransaction)
 	if err != nil {
 		handleError(ctx, err)
 		return
