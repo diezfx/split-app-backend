@@ -6,6 +6,7 @@ import (
 
 type Transaction struct {
 	ID              uuid.UUID
+	ProjectID       uuid.UUID
 	Name            string
 	TransactionType string
 	Amount          int
