@@ -49,8 +49,8 @@ func (t *AddTransaction) Validate() (service.Transaction, error) {
 	if t.Name == "" {
 		err = errors.Join(err, NewInvalidArgumentError("Name"))
 	}
-	transactionType := service.ConvertToTransactionType(t.TransactionType)
-	if transactionType == service.Undefined {
+	transactionType := service.ParseTransactionType(t.TransactionType)
+	if transactionType == service.UndefinedTransactionType {
 		err = errors.Join(err, NewInvalidArgumentError("TransactionType"))
 	}
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"github.com/Rhymond/go-money"
-	"github.com/diezfx/split-app-backend/gen/ent/transaction"
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/google/uuid"
 )
@@ -10,19 +9,19 @@ import (
 type TransactionType string
 
 const (
-	Undefined TransactionType = "Undefined"
-	Expense   TransactionType = "Expense"
-	Transfer  TransactionType = "Transfer"
+	UndefinedTransactionType TransactionType = "Undefined"
+	ExpenseTransactionType   TransactionType = "Expense"
+	TransferTransactionType  TransactionType = "Transfer"
 )
 
-func ConvertToTransactionType(trans string) TransactionType {
+func ParseTransactionType(trans string) TransactionType {
 	switch trans {
-	case string(Expense):
-		return Expense
-	case string(Transfer):
-		return Transfer
+	case string(ExpenseTransactionType):
+		return ExpenseTransactionType
+	case string(TransferTransactionType):
+		return TransferTransactionType
 	default:
-		return Undefined
+		return UndefinedTransactionType
 	}
 }
 
@@ -71,37 +70,23 @@ func ToStorageProject(proj Project) storage.Project {
 }
 
 func ToStorageTransaction(trans Transaction) storage.Transaction {
-	transactionValue := transaction.TransactionTypeExpense
-	switch trans.TransactionType {
-	case Expense:
-		transactionValue = transaction.TransactionTypeExpense
-	case Transfer:
-		transactionValue = transaction.TransactionTypeTransfer
-	}
 
 	return storage.Transaction{
 		ID:   trans.ID,
-		Name: trans.Name, Amount: trans.Amount,
+		Name: trans.Name, Amount: int(trans.Amount.Amount()),
 		SourceID:        trans.SourceID,
 		TargetIDs:       trans.TargetIDs,
-		TransactionType: transactionValue,
+		TransactionType: string(trans.TransactionType),
 	}
 }
 
 func FromStorageTransaction(trans storage.Transaction) Transaction {
-	transactionValue := Undefined
-	switch trans.TransactionType {
-	case transaction.TransactionTypeExpense:
-		transactionValue = Expense
-	case transaction.TransactionTypeTransfer:
-		transactionValue = Transfer
-	}
 
 	return Transaction{
 		ID:   trans.ID,
-		Name: trans.Name, Amount: trans.Amount,
+		Name: trans.Name, Amount: money.New(int64(trans.Amount), money.EUR),
 		SourceID:        trans.SourceID,
 		TargetIDs:       trans.TargetIDs,
-		TransactionType: transactionValue,
+		TransactionType: ParseTransactionType(trans.TransactionType),
 	}
 }

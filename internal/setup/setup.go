@@ -12,7 +12,7 @@ import (
 	"github.com/diezfx/split-app-backend/internal/service"
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/diezfx/split-app-backend/pkg/logger"
-	"github.com/diezfx/split-app-backend/pkg/sqlite"
+	"github.com/diezfx/split-app-backend/pkg/postgres"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -26,12 +26,12 @@ func SetupSplitService() (*http.Server, error) {
 
 	logger.Info(ctx).String("config", fmt.Sprint(cfg)).Msg("Loaded config")
 
-	entClient, err := sqlite.NewSqliteDB(cfg.DB)
+	psqlClient, err := postgres.New(cfg.DB)
 	if err != nil {
 		return nil, fmt.Errorf("create sqlite client: %w", err)
 	}
 
-	storageClient, err := storage.New(entClient)
+	storageClient, err := storage.New(ctx, psqlClient)
 	if err != nil {
 		return nil, fmt.Errorf("create storage client: %w", err)
 	}

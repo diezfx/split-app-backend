@@ -17,6 +17,7 @@ import (
 
 type APIHandler struct {
 	projectService ProjectService
+	userService    UserService
 }
 
 func newAPIHandler(projectService ProjectService) *APIHandler {
@@ -43,6 +44,7 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	r.GET("projects", apiHandler.getProjectsHandler)
 	r.POST("projects", apiHandler.addProjectHandler)
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
+	r.GET("projects/:id/users", apiHandler.getUsersHandler)
 
 	return &http.Server{
 		Handler: mr,
@@ -51,6 +53,10 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+}
+
+func (api *APIHandler) getUsersHandler(ctx *gin.Context) {
+
 }
 
 func (api *APIHandler) getProjectsHandler(ctx *gin.Context) {

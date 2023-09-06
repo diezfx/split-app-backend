@@ -14,3 +14,7 @@ type ProjectService interface {
 
 	AddTransaction(ctx context.Context, projID uuid.UUID, transaction service.Transaction) error
 }
+
+type UserService interface {
+	GetUsers(ctx context.Context, proj service.Project) (service.Project, error)
+}
