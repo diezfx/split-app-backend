@@ -4,7 +4,6 @@ const seedUUID = "902b0687-f61c-41c4-86dc-f7d62db6ed7d"
 
 //nolint:gomnd // seed function may contain magic numbers
 func (c *Client) Seed() error {
-	/*
 		ctx := context.Background()
 		id := uuid.MustParse(seedUUID)
 
