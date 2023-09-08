@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/diezfx/split-app-backend/pkg/logger"
 	"github.com/diezfx/split-app-backend/pkg/postgres"
+	"github.com/georgysavva/scany/v2/sqlscan"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
@@ -33,7 +33,7 @@ func New(ctx context.Context, sqlConn *postgres.DB) (*Client, error) {
 
 func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
 	sqlQuery := `
-	SELECT p.id, p.name, t.id, t.name,t.amount,t.source_id,t.transaction_type,tt.user_id
+	SELECT p.id as project_id, p.name as project_name, t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
 	FROM projects as p
 	LEFT JOIN transactions as t
 	ON p.id=t.project_id 
@@ -41,62 +41,23 @@ func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, err
 	ON t.id=tt.transaction_id
 	where p.id=$1
 	`
-	rows, err := c.conn.QueryContext(ctx, sqlQuery, id)
+	var projectQueryElements []projectQueryElement
+
+	err := sqlscan.Select(ctx, c.conn.DB, &projectQueryElements, sqlQuery, id)
 	if err != nil {
-		return Project{}, fmt.Errorf("query projects: %w", err)
+		return Project{}, fmt.Errorf("select queryElements: %w", err)
 	}
-
-	var project = Project{ID: id, Transactions: []Transaction{}}
-	rowCount := 0
-	for rows.Next() {
-		rowCount++
-		var projectID, projectName, transactionID, transactionName, transactionSourceID, transactionType, targetUserID sql.NullString
-		var transactionAmount sql.NullInt64
-		err := rows.Scan(&projectID, &projectName, &transactionID, &transactionName, &transactionAmount, &transactionSourceID, &transactionType, &targetUserID)
-		if err != nil {
-			return project, fmt.Errorf("scan projects row: %w", err)
-		}
-		project.Name = projectName.String
-
-		if !transactionID.Valid {
-			return project, nil
-		}
-
-		var transaction Transaction
-		transIndex := slices.IndexFunc(project.Transactions, func(t Transaction) bool {
-			return transactionID.String == t.ID.String()
-		})
-		if transIndex == -1 {
-			transaction = Transaction{
-				ID:              uuid.MustParse(transactionID.String),
-				Name:            transactionName.String,
-				Amount:          int(transactionAmount.Int64),
-				SourceID:        transactionSourceID.String,
-				TargetIDs:       []string{},
-				TransactionType: transactionType.String}
-			project.Transactions = append(project.Transactions, transaction)
-			transIndex = len(project.Transactions) - 1
-		} else {
-			transaction = project.Transactions[transIndex]
-		}
-
-		if targetUserID.Valid {
-			transaction.TargetIDs = append(transaction.TargetIDs, targetUserID.String)
-		}
-
-		project.Transactions[transIndex] = transaction
-
+	projects := mergeProject(projectQueryElements)
+	if len(projects) == 0 {
+		return Project{}, ErrNotFound
 	}
-	if rowCount == 0 {
-		return project, ErrNotFound
-	}
+	return projects[0], nil
 
-	return project, nil
 }
 
 func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
 	sqlQuery := `
-	SELECT p.id, p.name, t.id, t.name,t.amount,t.source_id,t.transaction_type,tt.user_id
+	SELECT p.id as project_id, p.name as project_name, t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
 	FROM projects as p
 	LEFT JOIN transactions as t
 	ON p.id=t.project_id
@@ -104,64 +65,13 @@ func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
 	ON t.id=tt.transaction_id
 	ORDER BY p.id
 	`
-	rows, err := c.conn.QueryContext(ctx, sqlQuery)
+	var projectQueryElements []projectQueryElement
+
+	err := sqlscan.Select(ctx, c.conn.DB, &projectQueryElements, sqlQuery)
 	if err != nil {
-		return nil, fmt.Errorf("query projects: %w", err)
+		return nil, fmt.Errorf("select queryElements: %w", err)
 	}
-
-	projects := []Project{}
-	for rows.Next() {
-		var projectID, projectName, transactionID, transactionName, transactionSourceID, transactionType, targetUserID sql.NullString
-		var transactionAmount sql.NullInt64
-		err := rows.Scan(&projectID, &projectName, &transactionID, &transactionName, &transactionAmount, &transactionSourceID, &transactionType, &targetUserID)
-		if err != nil {
-			return nil, fmt.Errorf("scan projects row: %w", err)
-		}
-
-		index := slices.IndexFunc(projects, func(p Project) bool {
-			return projectID.String == p.ID.String()
-		})
-		var project Project
-		if index == -1 {
-			project = Project{
-				ID:   uuid.MustParse(projectID.String),
-				Name: projectName.String, Transactions: []Transaction{}}
-			projects = append(projects, project)
-			index = len(projects) - 1
-		} else {
-			project = projects[index]
-		}
-		if !transactionID.Valid {
-			continue
-		}
-
-		var transaction Transaction
-		transIndex := slices.IndexFunc(project.Transactions, func(t Transaction) bool {
-			return transactionID.String == t.ID.String()
-		})
-		if transIndex == -1 {
-			transaction = Transaction{
-				ID:              uuid.MustParse(transactionID.String),
-				Name:            transactionName.String,
-				Amount:          int(transactionAmount.Int64),
-				SourceID:        transactionSourceID.String,
-				TargetIDs:       []string{},
-				TransactionType: transactionType.String}
-			project.Transactions = append(project.Transactions, transaction)
-			transIndex = len(project.Transactions) - 1
-		} else {
-			transaction = project.Transactions[transIndex]
-		}
-
-		if targetUserID.Valid {
-			transaction.TargetIDs = append(transaction.TargetIDs, targetUserID.String)
-		}
-
-		project.Transactions[transIndex] = transaction
-		projects[index] = project
-
-	}
-
+	projects := mergeProject(projectQueryElements)
 	return projects, nil
 }
 
@@ -197,7 +107,6 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 
 	}
 
-	logger.Info(ctx).Msg("this is reached")
 	err := WithTransaction(ctx, c.conn.DB, addProjectFunc)
 	if err != nil {
 		return proj, fmt.Errorf("execute add project transaction: %w", err)
@@ -206,37 +115,74 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 	return proj, nil
 }
 
-func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, tx Transaction) error {
-	sqlQuery := `
-	SELECT p.id, p.name, t.id, t.name,t.transaction_type  
-	FROM projects as p,
-	LEFT JOIN transactions as t
-	ON p.id=t.project_id
-	`
-	c.conn.QueryRowContext(ctx, sqlQuery)
-	return nil
+func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transaction Transaction) error {
+
+	addTransactionFunc := func(ctx context.Context, tx *sql.Tx) error {
+		const sqlQuery = `
+		INSERT INTO transactions (id,name,amount,source_id,transaction_type,project_id)
+		VALUES($1,$2,$3,$4,$5)
+		`
+		_, err := tx.ExecContext(ctx, sqlQuery, transaction.ID, transaction.Name, transaction.Amount, transaction.SourceID, transaction.TransactionType, projectID)
+		if err != nil {
+			return fmt.Errorf("insert project: %w", err)
+		}
+
+		const insertTransactionTargetsQuery = `
+		INSERT INTO transaction_targets (transaction_id,user_id)
+		VALUES($1,$2)`
+
+		stmt, err := tx.Prepare(insertTransactionTargetsQuery)
+		if err != nil {
+			return fmt.Errorf("prepare add project users: %w", err)
+		}
+		for _, target := range transaction.TargetIDs {
+			_, err := stmt.ExecContext(ctx, transaction.ID, target)
+			if err != nil {
+				return fmt.Errorf("insert target: %w", err)
+			}
+		}
+		return nil
+	}
+
+	return WithTransaction(ctx, c.conn.DB, addTransactionFunc)
 }
 
 func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
 	sqlQuery := `
-	SELECT p.id, p.name, t.id, t.name,t.transaction_type  
-	FROM projects as p,
-	LEFT JOIN transactions as t
-	ON p.id=t.project_id
+	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
+	FROM transactions as t
+	LEFT JOIN transaction_targets as tt
+	ON t.id=tt.transaction_id
+	WHERE source_id=$1
 	`
-	c.conn.QueryRowContext(ctx, sqlQuery)
-	return nil, nil
+	var transactionElements []transactionQueryElement
+	err := sqlscan.Select(ctx, c.conn.DB, &transactionElements, sqlQuery, userID)
+	if err != nil {
+		return nil, fmt.Errorf("select transactions: %w", err)
+	}
+
+	// merge transactions
+	transactions := mergeTransactionElements(transactionElements)
+	return transactions, nil
 }
 
 func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, projectID uuid.UUID, userID string) ([]Transaction, error) {
 	sqlQuery := `
-	SELECT p.id, p.name, t.id, t.name,t.transaction_type  
-	FROM projects as p,
-	LEFT JOIN transactions as t
-	ON p.id=t.project_id
+	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
+	FROM transactions as t
+	JOIN transaction_targets as tt
+	ON t.id=tt.transaction_id
+	WHERE target_id=$1
 	`
-	c.conn.QueryRowContext(ctx, sqlQuery)
-	return nil, nil
+	var transactionElements []transactionQueryElement
+	err := sqlscan.Select(ctx, c.conn.DB, &transactionElements, sqlQuery, userID)
+	if err != nil {
+		return nil, fmt.Errorf("select transactions: %w", err)
+	}
+
+	// merge transactions
+	transactions := mergeTransactionElements(transactionElements)
+	return transactions, nil
 }
 
 func WithTransaction(ctx context.Context, db *sql.DB, fn func(ctx context.Context, tx *sql.Tx) error) error {
@@ -258,4 +204,83 @@ func WithTransaction(ctx context.Context, db *sql.DB, fn func(ctx context.Contex
 	}
 
 	return nil // Return nil to indicate success
+}
+
+func mergeTransactionElements(transactionElements []transactionQueryElement) []Transaction {
+	transactions := []Transaction{}
+	for _, te := range transactionElements {
+		index := slices.IndexFunc(transactions, func(t Transaction) bool {
+			return t.ID == te.ID
+		})
+		var transaction Transaction
+		if index == -1 {
+			transaction = Transaction{
+				ID:              te.ID,
+				Name:            te.Name,
+				Amount:          te.Amount,
+				TransactionType: te.TransactionType,
+				SourceID:        te.SourceID,
+				ProjectID:       te.ProjectID,
+				TargetIDs:       []string{}}
+			transactions = append(transactions, transaction)
+			index = len(transactions) - 1
+		}
+
+		if te.TargetID != "" {
+			transaction.TargetIDs = append(transaction.TargetIDs, te.TargetID)
+		}
+		transactions[index] = transaction
+	}
+	return transactions
+}
+
+func mergeProject(projectElements []projectQueryElement) []Project {
+	projects := []Project{}
+
+	for _, pe := range projectElements {
+
+		index := slices.IndexFunc(projects, func(p Project) bool {
+			return pe.ProjectID.String == p.ID.String()
+		})
+		var project Project
+		if index == -1 {
+			project = Project{
+				ID:   uuid.MustParse(pe.ProjectID.String),
+				Name: pe.ProjectName.String, Transactions: []Transaction{}}
+			projects = append(projects, project)
+			index = len(projects) - 1
+		} else {
+			project = projects[index]
+		}
+		if !pe.TransactionID.Valid {
+			continue
+		}
+
+		var transaction Transaction
+		transIndex := slices.IndexFunc(project.Transactions, func(t Transaction) bool {
+			return pe.TransactionID.String == t.ID.String()
+		})
+		if transIndex == -1 {
+			transaction = Transaction{
+				ID:              uuid.MustParse(pe.TransactionID.String),
+				Name:            pe.TransactionName.String,
+				Amount:          int(pe.Amount.Int64),
+				SourceID:        pe.SourceID.String,
+				TargetIDs:       []string{},
+				TransactionType: pe.TransactionType.String}
+			project.Transactions = append(project.Transactions, transaction)
+			transIndex = len(project.Transactions) - 1
+		} else {
+			transaction = project.Transactions[transIndex]
+		}
+
+		if pe.TargetID.Valid {
+			transaction.TargetIDs = append(transaction.TargetIDs, pe.TargetID.String)
+		}
+
+		project.Transactions[transIndex] = transaction
+		projects[index] = project
+
+	}
+	return projects
 }
