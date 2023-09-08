@@ -37,6 +37,10 @@ type transactionQueryElement struct {
 	TargetID        string
 }
 
+type User struct {
+	ID string
+}
+
 type Project struct {
 	ID           uuid.UUID
 	Name         string

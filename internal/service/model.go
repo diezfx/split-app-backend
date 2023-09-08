@@ -25,6 +25,10 @@ func ParseTransactionType(trans string) TransactionType {
 	}
 }
 
+type User struct {
+	ID string
+}
+
 type Transaction struct {
 	ID              uuid.UUID
 	Name            string
@@ -70,7 +74,6 @@ func ToStorageProject(proj Project) storage.Project {
 }
 
 func ToStorageTransaction(trans Transaction) storage.Transaction {
-
 	return storage.Transaction{
 		ID:   trans.ID,
 		Name: trans.Name, Amount: int(trans.Amount.Amount()),
@@ -81,7 +84,6 @@ func ToStorageTransaction(trans Transaction) storage.Transaction {
 }
 
 func FromStorageTransaction(trans storage.Transaction) Transaction {
-
 	return Transaction{
 		ID:   trans.ID,
 		Name: trans.Name, Amount: money.New(int64(trans.Amount), money.EUR),

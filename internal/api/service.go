@@ -11,10 +11,10 @@ type ProjectService interface {
 	GetProjectByID(ctx context.Context, id uuid.UUID) (service.Project, error)
 	GetProjects(ctx context.Context) ([]service.Project, error)
 	AddProject(ctx context.Context, proj service.Project) (service.Project, error)
-
+	GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]service.User, error)
 	AddTransaction(ctx context.Context, projID uuid.UUID, transaction service.Transaction) error
 }
 
 type UserService interface {
-	GetUsers(ctx context.Context, proj service.Project) (service.Project, error)
+	GetUsers(ctx context.Context) ([]service.User, error)
 }

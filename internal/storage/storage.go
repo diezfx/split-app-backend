@@ -31,7 +31,8 @@ func New(ctx context.Context, sqlConn *postgres.DB) (*Client, error) {
 
 func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
 	sqlQuery := `
-	SELECT p.id as project_id, p.name as project_name, t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
+	SELECT p.id as project_id, p.name as project_name,
+		t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
 	FROM projects as p
 	LEFT JOIN transactions as t
 	ON p.id=t.project_id 
@@ -50,12 +51,12 @@ func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, err
 		return Project{}, ErrNotFound
 	}
 	return projects[0], nil
-
 }
 
 func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
 	sqlQuery := `
-	SELECT p.id as project_id, p.name as project_name, t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
+	SELECT p.id as project_id, p.name as project_name,
+		t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
 	FROM projects as p
 	LEFT JOIN transactions as t
 	ON p.id=t.project_id
@@ -74,11 +75,8 @@ func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
 }
 
 func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) {
-
 	addProjectFunc := func(ctx context.Context, tx *sql.Tx) error {
-
-		sqlQuery := `
-		insert into projects (id,name)
+		sqlQuery := `insert into projects (id,name)
 		values($1,$2)
 		`
 		_, err := tx.ExecContext(ctx, sqlQuery, proj.ID, proj.Name)
@@ -86,8 +84,7 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 			return fmt.Errorf("insert project: %w", err)
 		}
 
-		sqlUserInsert := `
-		insert into project_memberships (project_id,user_id)
+		sqlUserInsert := `insert into project_memberships (project_id,user_id)
 		values($1,$2)
 		`
 		stmt, err := tx.Prepare(sqlUserInsert)
@@ -95,17 +92,15 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 			return fmt.Errorf("prepare add project users: %w", err)
 		}
 		for _, user := range proj.Members {
-
 			_, err := stmt.ExecContext(ctx, proj.ID, user)
 			if err != nil {
 				return fmt.Errorf("insert user: %w", err)
 			}
 		}
 		return nil
-
 	}
 
-	err := WithTransaction(ctx, c.conn.DB, addProjectFunc)
+	err := withTransaction(ctx, c.conn.DB, addProjectFunc)
 	if err != nil {
 		return proj, fmt.Errorf("execute add project transaction: %w", err)
 	}
@@ -114,13 +109,13 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 }
 
 func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transaction Transaction) error {
-
 	addTransactionFunc := func(ctx context.Context, tx *sql.Tx) error {
 		const sqlQuery = `
 		INSERT INTO transactions (id,name,amount,source_id,transaction_type,project_id)
 		VALUES($1,$2,$3,$4,$5)
 		`
-		_, err := tx.ExecContext(ctx, sqlQuery, transaction.ID, transaction.Name, transaction.Amount, transaction.SourceID, transaction.TransactionType, projectID)
+		_, err := tx.ExecContext(ctx, sqlQuery,
+			transaction.ID, transaction.Name, transaction.Amount, transaction.SourceID, transaction.TransactionType, projectID)
 		if err != nil {
 			return fmt.Errorf("insert project: %w", err)
 		}
@@ -142,7 +137,7 @@ func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transa
 		return nil
 	}
 
-	return WithTransaction(ctx, c.conn.DB, addTransactionFunc)
+	return withTransaction(ctx, c.conn.DB, addTransactionFunc)
 }
 
 func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
@@ -164,7 +159,7 @@ func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID 
 	return transactions, nil
 }
 
-func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, projectID uuid.UUID, userID string) ([]Transaction, error) {
+func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
 	sqlQuery := `
 	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
 	FROM transactions as t
@@ -183,7 +178,22 @@ func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, project
 	return transactions, nil
 }
 
-func WithTransaction(ctx context.Context, db *sql.DB, fn func(ctx context.Context, tx *sql.Tx) error) error {
+func (c *Client) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]User, error) {
+	sqlQuery := `
+	SELECT user_id as id
+	FROM project_memberships
+	WHERE project_id=$1
+	`
+	var users []User
+	err := sqlscan.Select(ctx, c.conn.DB, &users, sqlQuery, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("select users: %w", err)
+	}
+
+	return users, nil
+}
+
+func withTransaction(ctx context.Context, db *sql.DB, fn func(ctx context.Context, tx *sql.Tx) error) error {
 	// Begin a transaction
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -219,7 +229,8 @@ func mergeTransactionElements(transactionElements []transactionQueryElement) []T
 				TransactionType: te.TransactionType,
 				SourceID:        te.SourceID,
 				ProjectID:       te.ProjectID,
-				TargetIDs:       []string{}}
+				TargetIDs:       []string{},
+			}
 			transactions = append(transactions, transaction)
 			index = len(transactions) - 1
 		}
@@ -235,8 +246,8 @@ func mergeTransactionElements(transactionElements []transactionQueryElement) []T
 func mergeProject(projectElements []projectQueryElement) []Project {
 	projects := []Project{}
 
-	for _, pe := range projectElements {
-
+	for i := 0; i < len(projectElements); i++ {
+		pe := projectElements[i]
 		index := slices.IndexFunc(projects, func(p Project) bool {
 			return pe.ProjectID.String == p.ID.String()
 		})
@@ -244,7 +255,8 @@ func mergeProject(projectElements []projectQueryElement) []Project {
 		if index == -1 {
 			project = Project{
 				ID:   uuid.MustParse(pe.ProjectID.String),
-				Name: pe.ProjectName.String, Transactions: []Transaction{}}
+				Name: pe.ProjectName.String, Transactions: []Transaction{},
+			}
 			projects = append(projects, project)
 			index = len(projects) - 1
 		} else {
@@ -265,7 +277,8 @@ func mergeProject(projectElements []projectQueryElement) []Project {
 				Amount:          int(pe.Amount.Int64),
 				SourceID:        pe.SourceID.String,
 				TargetIDs:       []string{},
-				TransactionType: pe.TransactionType.String}
+				TransactionType: pe.TransactionType.String,
+			}
 			project.Transactions = append(project.Transactions, transaction)
 			transIndex = len(project.Transactions) - 1
 		} else {
@@ -278,7 +291,6 @@ func mergeProject(projectElements []projectQueryElement) []Project {
 
 		project.Transactions[transIndex] = transaction
 		projects[index] = project
-
 	}
 	return projects
 }

@@ -111,3 +111,7 @@ func ProjectFromServiceProject(p service.Project) Project {
 	}
 	return Project{ID: p.ID, Name: p.Name, Transactions: transactions, Members: p.Members}
 }
+
+type User struct {
+	ID string `json:"id"`
+}

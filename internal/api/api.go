@@ -17,7 +17,6 @@ import (
 
 type APIHandler struct {
 	projectService ProjectService
-	userService    UserService
 }
 
 func newAPIHandler(projectService ProjectService) *APIHandler {
@@ -44,7 +43,7 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	r.GET("projects", apiHandler.getProjectsHandler)
 	r.POST("projects", apiHandler.addProjectHandler)
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
-	r.GET("projects/:id/users", apiHandler.getUsersHandler)
+	r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
 
 	return &http.Server{
 		Handler: mr,
@@ -55,8 +54,19 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 	}
 }
 
-func (api *APIHandler) getUsersHandler(ctx *gin.Context) {
+func (api *APIHandler) getProjectUsersHandler(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("invalid id givens: %w", errInvalidInput))
+	}
+	users, err := api.projectService.GetProjectUsers(ctx, id)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("getUsers: %w", err))
+		return
+	}
 
+	ctx.JSON(http.StatusOK, users)
 }
 
 func (api *APIHandler) getProjectsHandler(ctx *gin.Context) {
@@ -101,7 +111,6 @@ func (api *APIHandler) getProjectByIDHandler(ctx *gin.Context) {
 }
 
 func (api *APIHandler) addTransactionHandler(ctx *gin.Context) {
-
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -110,7 +119,7 @@ func (api *APIHandler) addTransactionHandler(ctx *gin.Context) {
 	}
 
 	var transaction AddTransaction
-	if err := ctx.BindJSON(&transaction); err != nil {
+	if err = ctx.BindJSON(&transaction); err != nil {
 		handleError(ctx, fmt.Errorf("parse add transaction body: %w: %w", errInvalidInput, err))
 		return
 	}

@@ -43,8 +43,7 @@ func buildConnectionString(cfg Config) string {
 	return fmt.Sprintf(connectionString, cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
 }
 
-func (db *DB) Up(ctx context.Context) error {
-
+func (db *DB) Up(_ context.Context) error {
 	driver, err := migratepgx.WithInstance(db.DB, &migratepgx.Config{})
 	if err != nil {
 		return fmt.Errorf("create migration driver: %w", err)
@@ -59,5 +58,4 @@ func (db *DB) Up(ctx context.Context) error {
 		return fmt.Errorf("migrate up: %w", err)
 	}
 	return nil
-
 }

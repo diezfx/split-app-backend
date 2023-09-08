@@ -28,7 +28,10 @@ func Load() Config {
 			Addr:        ":8080",
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
-			DB:          postgres.Config{Port: 5432, Host: "localhost", Database: "postgres", Username: "postgres", Password: "postgres", MigrationsDir: "db/migrations"},
+			DB: postgres.Config{
+				Host: "localhost", Port: 5432, Database: "postgres",
+				Username: "postgres", Password: "postgres",
+				MigrationsDir: "db/migrations"},
 		}
 	}
 
@@ -36,6 +39,9 @@ func Load() Config {
 		Addr:        "localhost:5002",
 		Environment: LocalEnv,
 		LogLevel:    "debug",
-		DB:          postgres.Config{Port: 5432, Host: "localhost", Database: "postgres", Username: "postgres", Password: "postgres", MigrationsDir: "db/migrations"},
+		DB: postgres.Config{
+			Port: 5432, Host: "localhost", Database: "postgres",
+			Username: "postgres", Password: "postgres",
+			MigrationsDir: "db/migrations"},
 	}
 }
