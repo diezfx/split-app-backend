@@ -13,6 +13,21 @@ type Service struct {
 	projStorage ProjectStorage
 }
 
+// GetProjectUsers implements api.ProjectService.
+func (s *Service) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]User, error) {
+	sUsers, err := s.projStorage.GetProjectUsers(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("getProjectUsers: %w", err)
+	}
+
+	users := make([]User, 0, len(sUsers))
+
+	for _, u := range sUsers {
+		users = append(users, User{ID: u.ID})
+	}
+	return users, nil
+}
+
 // AddTransaction implements api.ProjectService.
 func (s *Service) AddTransaction(ctx context.Context, projID uuid.UUID, transaction Transaction) error {
 	_, err := s.projStorage.GetProjectByID(ctx, projID)

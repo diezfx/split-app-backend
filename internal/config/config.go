@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/diezfx/split-app-backend/pkg/sqlite"
+	"github.com/diezfx/split-app-backend/pkg/postgres"
 )
 
 type Environment string
@@ -18,7 +18,7 @@ type Config struct {
 	Environment Environment
 	LogLevel    string
 
-	DB sqlite.Config
+	DB postgres.Config
 }
 
 func Load() Config {
@@ -28,7 +28,10 @@ func Load() Config {
 			Addr:        ":8080",
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
-			DB:          sqlite.Config{Path: "ent.db", InMemory: false},
+			DB: postgres.Config{
+				Host: "localhost", Port: 5432, Database: "postgres",
+				Username: "postgres", Password: "postgres",
+				MigrationsDir: "db/migrations"},
 		}
 	}
 
@@ -36,6 +39,9 @@ func Load() Config {
 		Addr:        "localhost:5002",
 		Environment: LocalEnv,
 		LogLevel:    "debug",
-		DB:          sqlite.Config{Path: "ent.db", InMemory: false},
+		DB: postgres.Config{
+			Port: 5432, Host: "localhost", Database: "postgres",
+			Username: "postgres", Password: "postgres",
+			MigrationsDir: "db/migrations"},
 	}
 }

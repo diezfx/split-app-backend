@@ -2,97 +2,295 @@ package storage
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
-	"github.com/diezfx/split-app-backend/gen/ent"
-	"github.com/diezfx/split-app-backend/gen/ent/project"
-	"github.com/diezfx/split-app-backend/gen/ent/transaction"
+	"github.com/diezfx/split-app-backend/pkg/postgres"
+	"github.com/georgysavva/scany/v2/sqlscan"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
 )
 
 type Client struct {
-	entClient *ent.Client
+	conn *postgres.DB
 }
 
-func New(entClient *ent.Client) (*Client, error) {
-	if err := entClient.Schema.Create(context.Background()); err != nil {
-		return nil, fmt.Errorf("create schema resources: %w", err)
-	}
-	client := Client{entClient: entClient}
+func New(ctx context.Context, sqlConn *postgres.DB) (*Client, error) {
+	client := Client{conn: sqlConn}
 
-	err := client.Seed()
-	if err != nil {
-		return nil, fmt.Errorf("seed db: %w", err)
+	err := client.conn.Up(ctx)
+
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return nil, fmt.Errorf("migrate up db: %w", err)
 	}
+
 	return &client, nil
 }
 
 func (c *Client) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
-	proj, err := c.entClient.Project.Query().WithTransactions().Where(project.ID(id)).First(ctx)
-	if ent.IsNotFound(err) {
+	sqlQuery := `
+	SELECT p.id as project_id, p.name as project_name,
+		t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
+	FROM projects as p
+	LEFT JOIN transactions as t
+	ON p.id=t.project_id 
+	LEFT JOIN transaction_targets as tt
+	ON t.id=tt.transaction_id
+	where p.id=$1
+	`
+	var projectQueryElements []projectQueryElement
+
+	err := sqlscan.Select(ctx, c.conn.DB, &projectQueryElements, sqlQuery, id)
+	if err != nil {
+		return Project{}, fmt.Errorf("select queryElements: %w", err)
+	}
+	projects := mergeProject(projectQueryElements)
+	if len(projects) == 0 {
 		return Project{}, ErrNotFound
 	}
-	if err != nil {
-		return Project{}, fmt.Errorf("get project by id: %w", err)
-	}
-
-	return FromEntProject(proj), nil
+	return projects[0], nil
 }
 
 func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
-	projs, err := c.entClient.Project.Query().WithTransactions().All(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get project by id: %w", err)
-	}
+	sqlQuery := `
+	SELECT p.id as project_id, p.name as project_name,
+		t.id as transaction_id, t.name as transaction_name,t.amount,t.source_id,t.transaction_type,tt.user_id as target_id
+	FROM projects as p
+	LEFT JOIN transactions as t
+	ON p.id=t.project_id
+	LEFT JOIN transaction_targets as tt
+	ON t.id=tt.transaction_id
+	ORDER BY p.id
+	`
+	var projectQueryElements []projectQueryElement
 
-	var projectList []Project
-	for _, p := range projs {
-		projectList = append(projectList, FromEntProject(p))
+	err := sqlscan.Select(ctx, c.conn.DB, &projectQueryElements, sqlQuery)
+	if err != nil {
+		return nil, fmt.Errorf("select queryElements: %w", err)
 	}
-	return projectList, nil
+	projects := mergeProject(projectQueryElements)
+	return projects, nil
 }
 
 func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) {
-	result, err := c.entClient.Project.Create().
-		SetID(proj.ID).
-		SetName(proj.Name).
-		SetMembers(proj.Members).Save(ctx)
-	if err != nil {
-		return Project{}, fmt.Errorf("add project to db: %w", err)
+	addProjectFunc := func(ctx context.Context, tx *sql.Tx) error {
+		sqlQuery := `insert into projects (id,name)
+		values($1,$2)
+		`
+		_, err := tx.ExecContext(ctx, sqlQuery, proj.ID, proj.Name)
+		if err != nil {
+			return fmt.Errorf("insert project: %w", err)
+		}
+
+		sqlUserInsert := `insert into project_memberships (project_id,user_id)
+		values($1,$2)
+		`
+		stmt, err := tx.Prepare(sqlUserInsert)
+		if err != nil {
+			return fmt.Errorf("prepare add project users: %w", err)
+		}
+		for _, user := range proj.Members {
+			_, err := stmt.ExecContext(ctx, proj.ID, user)
+			if err != nil {
+				return fmt.Errorf("insert user: %w", err)
+			}
+		}
+		return nil
 	}
 
-	return FromEntProject(result), nil
+	err := withTransaction(ctx, c.conn.DB, addProjectFunc)
+	if err != nil {
+		return proj, fmt.Errorf("execute add project transaction: %w", err)
+	}
+
+	return proj, nil
 }
 
-func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, tx Transaction) error {
-	_, err := c.entClient.Transaction.Create().
-		SetID(tx.ID).
-		SetName(tx.Name).
-		SetAmount(tx.Amount.Amount()).
-		SetSourceID(tx.SourceID).SetTransactionType(tx.TransactionType).
-		SetTargetIds(tx.TargetIDs).SetProjectID(projectID).Save(ctx)
-	if err != nil {
-		return fmt.Errorf("add transaction to db: %w", err)
+func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transaction Transaction) error {
+	addTransactionFunc := func(ctx context.Context, tx *sql.Tx) error {
+		const sqlQuery = `
+		INSERT INTO transactions (id,name,amount,source_id,transaction_type,project_id)
+		VALUES($1,$2,$3,$4,$5)
+		`
+		_, err := tx.ExecContext(ctx, sqlQuery,
+			transaction.ID, transaction.Name, transaction.Amount, transaction.SourceID, transaction.TransactionType, projectID)
+		if err != nil {
+			return fmt.Errorf("insert project: %w", err)
+		}
+
+		const insertTransactionTargetsQuery = `
+		INSERT INTO transaction_targets (transaction_id,user_id)
+		VALUES($1,$2)`
+
+		stmt, err := tx.Prepare(insertTransactionTargetsQuery)
+		if err != nil {
+			return fmt.Errorf("prepare add project users: %w", err)
+		}
+		for _, target := range transaction.TargetIDs {
+			_, err := stmt.ExecContext(ctx, transaction.ID, target)
+			if err != nil {
+				return fmt.Errorf("insert target: %w", err)
+			}
+		}
+		return nil
 	}
-	return nil
+
+	return withTransaction(ctx, c.conn.DB, addTransactionFunc)
 }
 
-func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]*ent.Transaction, error) {
-	txs, err := c.entClient.Transaction.Query().
-		Where(transaction.And(transaction.SourceID(userID))).
-		All(ctx)
+func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
+	sqlQuery := `
+	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
+	FROM transactions as t
+	LEFT JOIN transaction_targets as tt
+	ON t.id=tt.transaction_id
+	WHERE source_id=$1
+	`
+	var transactionElements []transactionQueryElement
+	err := sqlscan.Select(ctx, c.conn.DB, &transactionElements, sqlQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("get all outgoing edges: %w", err)
+		return nil, fmt.Errorf("select transactions: %w", err)
 	}
-	return txs, nil
+
+	// merge transactions
+	transactions := mergeTransactionElements(transactionElements)
+	return transactions, nil
 }
 
-func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, projectID uuid.UUID, userID string) ([]*ent.Transaction, error) {
-	txs, err := c.entClient.Transaction.Query().
-		Where(transaction.And(transaction.SourceID(userID), transaction.HasProjectWith(project.ID(projectID)))).
-		All(ctx)
+func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
+	sqlQuery := `
+	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
+	FROM transactions as t
+	JOIN transaction_targets as tt
+	ON t.id=tt.transaction_id
+	WHERE target_id=$1
+	`
+	var transactionElements []transactionQueryElement
+	err := sqlscan.Select(ctx, c.conn.DB, &transactionElements, sqlQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("get all outgoing edges: %w", err)
+		return nil, fmt.Errorf("select transactions: %w", err)
 	}
-	return txs, nil
+
+	// merge transactions
+	transactions := mergeTransactionElements(transactionElements)
+	return transactions, nil
+}
+
+func (c *Client) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]User, error) {
+	sqlQuery := `
+	SELECT user_id as id
+	FROM project_memberships
+	WHERE project_id=$1
+	`
+	var users []User
+	err := sqlscan.Select(ctx, c.conn.DB, &users, sqlQuery, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("select users: %w", err)
+	}
+
+	return users, nil
+}
+
+func withTransaction(ctx context.Context, db *sql.DB, fn func(ctx context.Context, tx *sql.Tx) error) error {
+	// Begin a transaction
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+
+	// Execute the provided function within the transaction
+	if err := fn(ctx, tx); err != nil {
+		rbErr := tx.Rollback()
+		return errors.Join(fmt.Errorf("execute function: %w", err), rbErr) // Return any error from the inner function
+	}
+
+	// Commit the transaction if everything was successful
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return nil // Return nil to indicate success
+}
+
+func mergeTransactionElements(transactionElements []transactionQueryElement) []Transaction {
+	transactions := []Transaction{}
+	for _, te := range transactionElements {
+		index := slices.IndexFunc(transactions, func(t Transaction) bool {
+			return t.ID == te.ID
+		})
+		var transaction Transaction
+		if index == -1 {
+			transaction = Transaction{
+				ID:              te.ID,
+				Name:            te.Name,
+				Amount:          te.Amount,
+				TransactionType: te.TransactionType,
+				SourceID:        te.SourceID,
+				ProjectID:       te.ProjectID,
+				TargetIDs:       []string{},
+			}
+			transactions = append(transactions, transaction)
+			index = len(transactions) - 1
+		}
+
+		if te.TargetID != "" {
+			transaction.TargetIDs = append(transaction.TargetIDs, te.TargetID)
+		}
+		transactions[index] = transaction
+	}
+	return transactions
+}
+
+func mergeProject(projectElements []projectQueryElement) []Project {
+	projects := []Project{}
+
+	for i := 0; i < len(projectElements); i++ {
+		pe := projectElements[i]
+		index := slices.IndexFunc(projects, func(p Project) bool {
+			return pe.ProjectID.String == p.ID.String()
+		})
+		var project Project
+		if index == -1 {
+			project = Project{
+				ID:   uuid.MustParse(pe.ProjectID.String),
+				Name: pe.ProjectName.String, Transactions: []Transaction{},
+			}
+			projects = append(projects, project)
+			index = len(projects) - 1
+		} else {
+			project = projects[index]
+		}
+		if !pe.TransactionID.Valid {
+			continue
+		}
+
+		var transaction Transaction
+		transIndex := slices.IndexFunc(project.Transactions, func(t Transaction) bool {
+			return pe.TransactionID.String == t.ID.String()
+		})
+		if transIndex == -1 {
+			transaction = Transaction{
+				ID:              uuid.MustParse(pe.TransactionID.String),
+				Name:            pe.TransactionName.String,
+				Amount:          int(pe.Amount.Int64),
+				SourceID:        pe.SourceID.String,
+				TargetIDs:       []string{},
+				TransactionType: pe.TransactionType.String,
+			}
+			project.Transactions = append(project.Transactions, transaction)
+			transIndex = len(project.Transactions) - 1
+		} else {
+			transaction = project.Transactions[transIndex]
+		}
+
+		if pe.TargetID.Valid {
+			transaction.TargetIDs = append(transaction.TargetIDs, pe.TargetID.String)
+		}
+
+		project.Transactions[transIndex] = transaction
+		projects[index] = project
+	}
+	return projects
 }
