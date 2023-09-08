@@ -18,8 +18,6 @@ type Client struct {
 }
 
 func New(ctx context.Context, sqlConn *postgres.DB) (*Client, error) {
-	//TODO use migrate up
-
 	client := Client{conn: sqlConn}
 
 	err := client.conn.Up(ctx)
