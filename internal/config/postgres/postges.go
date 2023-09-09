@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/diezfx/split-app-backend/pkg/configloader"
 	"github.com/diezfx/split-app-backend/pkg/postgres"
@@ -10,14 +11,16 @@ import (
 const defaultNamespace = "postgres"
 
 func LoadPostgresConfig(loader configloader.Loader) (postgres.Config, error) {
-
 	cfg := postgres.Config{}
 
 	content, err := loader.LoadConfig(defaultNamespace)
 	if err != nil {
 		return cfg, err
 	}
-	json.Unmarshal(content, &cfg)
+	err = json.Unmarshal(content, &cfg)
+	if err != nil {
+		return cfg, fmt.Errorf("unmarshal postgres: %w", err)
+	}
 
 	username, err := loader.LoadSecret(defaultNamespace, "username")
 	if err != nil {

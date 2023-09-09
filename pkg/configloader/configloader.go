@@ -19,7 +19,6 @@ type Loader struct {
 }
 
 func NewFileLoader(configPath, secretsPath string) *Loader {
-
 	return &Loader{configPath: configPath, secretsPath: secretsPath}
 }
 
@@ -32,8 +31,8 @@ func (c *Loader) LoadConfig(namespace string) ([]byte, error) {
 	return content, nil
 }
 
-func (c *Loader) LoadSecret(namespace string, key string) (string, error) {
-	path := fmt.Sprintf("%s/%s.json", c.configPath, namespace)
+func (c *Loader) LoadSecret(namespace, key string) (string, error) {
+	path := fmt.Sprintf("%s/%s/%s", c.configPath, namespace, key)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("read secret file %s: %w", path, err)

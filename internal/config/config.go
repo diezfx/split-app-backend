@@ -32,7 +32,7 @@ func Load() (Config, error) {
 	// read postgres secrets
 
 	if env == string(DevelopmentEnv) {
-		postgres, err := postgrescfg.LoadPostgresConfig(*loader)
+		pgDB, err := postgrescfg.LoadPostgresConfig(*loader)
 		if err != nil {
 			return Config{}, err
 		}
@@ -40,7 +40,7 @@ func Load() (Config, error) {
 		return Config{Addr: ":8080",
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
-			DB:          postgres,
+			DB:          pgDB,
 		}, nil
 	}
 
