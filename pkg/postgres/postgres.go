@@ -13,13 +13,13 @@ import (
 )
 
 type Config struct {
-	Port     int
-	Host     string
-	Database string
-	Username string
-	Password string
+	Port     int    `json:"port"`
+	Host     string `json:"host"`
+	Database string `json:"database"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 
-	MigrationsDir string
+	MigrationsDir string `json:"migrationsDir"`
 }
 
 const connectionString = "postgres://%s:%s@%s:%d/%s"

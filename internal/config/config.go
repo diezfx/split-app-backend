@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 
+	postgrescfg "github.com/diezfx/split-app-backend/internal/config/postgres"
+	"github.com/diezfx/split-app-backend/pkg/configloader"
 	"github.com/diezfx/split-app-backend/pkg/postgres"
 )
 
@@ -21,18 +23,25 @@ type Config struct {
 	DB postgres.Config
 }
 
-func Load() Config {
+func Load() (Config, error) {
 	env := os.Getenv("ENVIRONMENT")
+
+	// read from stuff json
+	loader := configloader.NewFileLoader("/etc/config", "/etc/secrets")
+
+	// read postgres secrets
+
 	if env == string(DevelopmentEnv) {
-		return Config{
-			Addr:        ":8080",
+		postgres, err := postgrescfg.LoadPostgresConfig(*loader)
+		if err != nil {
+			return Config{}, err
+		}
+
+		return Config{Addr: ":8080",
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
-			DB: postgres.Config{
-				Host: "localhost", Port: 5432, Database: "postgres",
-				Username: "postgres", Password: "postgres",
-				MigrationsDir: "db/migrations"},
-		}
+			DB:          postgres,
+		}, nil
 	}
 
 	return Config{
@@ -43,5 +52,5 @@ func Load() Config {
 			Port: 5432, Host: "localhost", Database: "postgres",
 			Username: "postgres", Password: "postgres",
 			MigrationsDir: "db/migrations"},
-	}
+	}, nil
 }

@@ -1,9 +1,0 @@
-version: "2"
-sql:
-  - engine: "postgresql"
-    queries: "sqlc-test/query.sql"
-    schema: "sqlc-test/schema.sql"
-    gen:
-      go:
-        package: "tutorial"
-        out: "tutorial"
