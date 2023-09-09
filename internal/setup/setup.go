@@ -18,7 +18,10 @@ import (
 )
 
 func SetupSplitService() (*http.Server, error) {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
 	ctx := context.Background()
 	if cfg.Environment == config.LocalEnv {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
