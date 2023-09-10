@@ -32,7 +32,7 @@ func (c *Loader) LoadConfig(namespace string) ([]byte, error) {
 }
 
 func (c *Loader) LoadSecret(namespace, key string) (string, error) {
-	path := fmt.Sprintf("%s/%s/%s", c.configPath, namespace, key)
+	path := fmt.Sprintf("%s/%s/%s", c.secretsPath, namespace, key)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("read secret file %s: %w", path, err)
