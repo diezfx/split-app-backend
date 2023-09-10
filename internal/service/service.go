@@ -7,6 +7,7 @@ import (
 
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
 )
 
 type Service struct {
@@ -83,6 +84,20 @@ func (s *Service) AddProject(ctx context.Context, project Project) (Project, err
 	}
 	if !errors.Is(err, storage.ErrNotFound) {
 		return Project{}, fmt.Errorf("add project: %w", err)
+	}
+
+	users, err := s.projStorage.GetUsers(ctx)
+	if err != nil {
+		return Project{}, fmt.Errorf("get users: %w", err)
+	}
+
+	for _, member := range project.Members {
+		if slices.IndexFunc(users, func(u storage.User) bool { return member == u.ID }) == -1 {
+			err = s.projStorage.AddUser(ctx, storage.User{ID: member})
+			if err != nil {
+				return Project{}, fmt.Errorf("add new user for project: %w", err)
+			}
+		}
 	}
 
 	proj, err := s.projStorage.AddProject(ctx, ToStorageProject(project))
