@@ -180,7 +180,7 @@ func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, userID 
 
 func (c *Client) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]User, error) {
 	sqlQuery := `
-	SELECT user_id as id
+	SELECT id
 	FROM project_memberships
 	WHERE project_id=$1
 	`
@@ -195,9 +195,8 @@ func (c *Client) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]Us
 
 func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
 	sqlQuery := `
-	SELECT user_id as id
+	SELECT id
 	FROM members
-	WHERE project_id=$1
 	`
 	var users []User
 	err := sqlscan.Select(ctx, c.conn.DB, &users, sqlQuery)
