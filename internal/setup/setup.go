@@ -41,7 +41,7 @@ func SetupSplitService() (*http.Server, error) {
 
 	projectService := service.New(storageClient)
 
-	router := api.InitAPI(cfg, projectService)
+	router := api.InitAPI(&cfg, projectService)
 
 	srv := &http.Server{
 		Handler: router.Handler,
