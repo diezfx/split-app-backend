@@ -93,7 +93,7 @@ func (s *Service) AddProject(ctx context.Context, project Project) (Project, err
 
 	for _, member := range project.Members {
 		if slices.IndexFunc(users, func(u storage.User) bool { return member == u.ID }) == -1 {
-			err := s.projStorage.AddUser(ctx, storage.User{ID: member})
+			err = s.projStorage.AddUser(ctx, storage.User{ID: member})
 			if err != nil {
 				return Project{}, fmt.Errorf("add new user for project: %w", err)
 			}

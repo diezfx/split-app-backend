@@ -215,7 +215,7 @@ func (c *Client) AddUser(ctx context.Context, user User) error {
 	`
 	_, err := c.conn.DB.ExecContext(ctx, sqlQuery, user.ID)
 	if err != nil {
-		return fmt.Errorf("insert memeber: %w", err)
+		return fmt.Errorf("insert member: %w", err)
 	}
 
 	return nil
