@@ -26,7 +26,7 @@ func ParseTransactionType(trans string) TransactionType {
 }
 
 type User struct {
-	ID string
+	ID string `json:"id"`
 }
 
 type Transaction struct {
