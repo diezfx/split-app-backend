@@ -193,6 +193,34 @@ func (c *Client) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]Us
 	return users, nil
 }
 
+func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
+	sqlQuery := `
+	SELECT user_id as id
+	FROM members
+	WHERE project_id=$1
+	`
+	var users []User
+	err := sqlscan.Select(ctx, c.conn.DB, &users, sqlQuery)
+	if err != nil {
+		return nil, fmt.Errorf("select users: %w", err)
+	}
+
+	return users, nil
+}
+
+func (c *Client) AddUser(ctx context.Context, user User) error {
+	sqlQuery := `
+	INSERT INTO members (id)
+	VALUES ($1)
+	`
+	_, err := c.conn.DB.ExecContext(ctx, sqlQuery, user.ID)
+	if err != nil {
+		return fmt.Errorf("insert member: %w", err)
+	}
+
+	return nil
+}
+
 func withTransaction(ctx context.Context, db *sql.DB, fn func(ctx context.Context, tx *sql.Tx) error) error {
 	// Begin a transaction
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
