@@ -39,7 +39,7 @@ func Load() (Config, error) {
 			return Config{}, err
 		}
 
-		auth, err := supabasecfg.LoadSupabaseConfig(loader)
+		authCfg, err := supabasecfg.LoadSupabaseConfig(loader)
 		if err != nil {
 			return Config{}, err
 		}
@@ -48,7 +48,7 @@ func Load() (Config, error) {
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
 			DB:          pgDB,
-			Auth:        auth,
+			Auth:        authCfg,
 		}, nil
 	}
 

@@ -41,14 +41,11 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 		r.Use(auth.AuthMiddleware(cfg.Auth))
 	}
 	apiHandler := newAPIHandler(projectService)
-
-	{
-		r.GET("projects/:id", apiHandler.getProjectByIDHandler)
-		r.GET("projects", apiHandler.getProjectsHandler)
-		r.POST("projects", apiHandler.addProjectHandler)
-		r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
-		r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
-	}
+	r.GET("projects/:id", apiHandler.getProjectByIDHandler)
+	r.GET("projects", apiHandler.getProjectsHandler)
+	r.POST("projects", apiHandler.addProjectHandler)
+	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
+	r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
 
 	return &http.Server{
 		Handler: mr,
