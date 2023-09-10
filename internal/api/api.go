@@ -30,7 +30,7 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	mr.Use(middleware.HTTPLoggingMiddleware())
 	mr.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "PATCH", "POST", "OPTION"},
-		AllowHeaders:     []string{"Origin"},
+		AllowHeaders:     []string{"Origin","Authorization"},
 		ExposeHeaders:    []string{"Content-Length", "Authorization"},
 		AllowCredentials: true,
 		AllowAllOrigins:  true,
