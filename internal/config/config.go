@@ -44,7 +44,8 @@ func Load() (Config, error) {
 			return Config{}, err
 		}
 
-		return Config{Addr: ":8080",
+		return Config{
+			Addr:        ":8080",
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
 			DB:          pgDB,
@@ -59,7 +60,8 @@ func Load() (Config, error) {
 		DB: postgres.Config{
 			Port: 5432, Host: "localhost", Database: "postgres",
 			Username: "postgres", Password: "postgres",
-			MigrationsDir: "db/migrations"},
+			MigrationsDir: "db/migrations",
+		},
 	}, nil
 }
 
