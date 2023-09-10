@@ -10,7 +10,7 @@ import (
 
 const defaultNamespace = "postgres"
 
-func LoadPostgresConfig(loader configloader.Loader) (postgres.Config, error) {
+func LoadPostgresConfig(loader *configloader.Loader) (postgres.Config, error) {
 	cfg := postgres.Config{}
 
 	content, err := loader.LoadConfig(defaultNamespace)

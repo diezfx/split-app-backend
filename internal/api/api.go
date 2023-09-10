@@ -8,6 +8,7 @@ import (
 
 	"github.com/diezfx/split-app-backend/internal/config"
 	"github.com/diezfx/split-app-backend/internal/service"
+	"github.com/diezfx/split-app-backend/pkg/auth"
 	"github.com/diezfx/split-app-backend/pkg/logger"
 	"github.com/diezfx/split-app-backend/pkg/middleware"
 	"github.com/gin-contrib/cors"
@@ -23,7 +24,7 @@ func newAPIHandler(projectService ProjectService) *APIHandler {
 	return &APIHandler{projectService: projectService}
 }
 
-func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
+func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	mr := gin.New()
 	mr.Use(gin.Recovery())
 	mr.Use(middleware.HTTPLoggingMiddleware())
@@ -36,14 +37,18 @@ func InitAPI(_ config.Config, projectService ProjectService) *http.Server {
 		MaxAge:           12 * time.Hour,
 	}))
 	r := mr.Group("/api/v1.0/")
-
+	if !cfg.IsLocal() {
+		r.Use(auth.AuthMiddleware(cfg.Auth))
+	}
 	apiHandler := newAPIHandler(projectService)
 
-	r.GET("projects/:id", apiHandler.getProjectByIDHandler)
-	r.GET("projects", apiHandler.getProjectsHandler)
-	r.POST("projects", apiHandler.addProjectHandler)
-	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
-	r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
+	{
+		r.GET("projects/:id", apiHandler.getProjectByIDHandler)
+		r.GET("projects", apiHandler.getProjectsHandler)
+		r.POST("projects", apiHandler.addProjectHandler)
+		r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
+		r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
+	}
 
 	return &http.Server{
 		Handler: mr,

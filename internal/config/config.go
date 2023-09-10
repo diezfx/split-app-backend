@@ -4,6 +4,8 @@ import (
 	"os"
 
 	postgrescfg "github.com/diezfx/split-app-backend/internal/config/postgres"
+	supabasecfg "github.com/diezfx/split-app-backend/internal/config/supabase"
+	"github.com/diezfx/split-app-backend/pkg/auth"
 	"github.com/diezfx/split-app-backend/pkg/configloader"
 	"github.com/diezfx/split-app-backend/pkg/postgres"
 )
@@ -19,8 +21,8 @@ type Config struct {
 	Addr        string
 	Environment Environment
 	LogLevel    string
-
-	DB postgres.Config
+	Auth        auth.Config
+	DB          postgres.Config
 }
 
 func Load() (Config, error) {
@@ -32,7 +34,12 @@ func Load() (Config, error) {
 	// read postgres secrets
 
 	if env == string(DevelopmentEnv) {
-		pgDB, err := postgrescfg.LoadPostgresConfig(*loader)
+		pgDB, err := postgrescfg.LoadPostgresConfig(loader)
+		if err != nil {
+			return Config{}, err
+		}
+
+		auth, err := supabasecfg.LoadSupabaseConfig(loader)
 		if err != nil {
 			return Config{}, err
 		}
@@ -41,6 +48,7 @@ func Load() (Config, error) {
 			Environment: DevelopmentEnv,
 			LogLevel:    "debug",
 			DB:          pgDB,
+			Auth:        auth,
 		}, nil
 	}
 
@@ -53,4 +61,8 @@ func Load() (Config, error) {
 			Username: "postgres", Password: "postgres",
 			MigrationsDir: "db/migrations"},
 	}, nil
+}
+
+func (cfg *Config) IsLocal() bool {
+	return cfg.Environment == LocalEnv
 }
