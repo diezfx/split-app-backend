@@ -31,7 +31,7 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	mr.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "PATCH", "POST", "OPTION"},
 		AllowHeaders:     []string{"Origin"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "Authorization"},
 		AllowCredentials: true,
 		AllowAllOrigins:  true,
 		MaxAge:           12 * time.Hour,
