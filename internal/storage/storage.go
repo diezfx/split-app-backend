@@ -112,7 +112,7 @@ func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transa
 	addTransactionFunc := func(ctx context.Context, tx *sql.Tx) error {
 		const sqlQuery = `
 		INSERT INTO transactions (id,name,amount,source_id,transaction_type,project_id)
-		VALUES($1,$2,$3,$4,$5)
+		VALUES($1,$2,$3,$4,$5,$6)
 		`
 		_, err := tx.ExecContext(ctx, sqlQuery,
 			transaction.ID, transaction.Name, transaction.Amount, transaction.SourceID, transaction.TransactionType, projectID)
