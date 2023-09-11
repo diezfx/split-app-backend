@@ -145,10 +145,7 @@ func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts,
 				Balance:  money.New(0, money.EUR),
 			}
 		}
-		totalIncome, err := totalCost.Income.Add(tx.Amount)
-		if err != nil {
-			return UserCosts{}, fmt.Errorf("add to totalIncome: %w", err)
-		}
+		totalIncome, _ := totalCost.Income.Add(tx.Amount)
 		totalCost.Income = totalIncome
 
 		projectCost := projectCosts[tx.ProjectID]
@@ -165,7 +162,7 @@ func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts,
 				Balance:  money.New(0, money.EUR),
 			}
 		}
-		totalExpenses, err := totalCost.Expenses.Add(tx.Amount)
+		totalExpenses, _ := totalCost.Expenses.Add(tx.Amount)
 		totalCost.Expenses = totalExpenses
 
 		projectCost := projectCosts[tx.ProjectID]
@@ -184,10 +181,9 @@ func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts,
 	}
 
 	for pID, c := range projectCosts {
-		balance, _ := c.Expenses.Subtract(c.Income)
+		balance, _ = c.Expenses.Subtract(c.Income)
 		c.Balance = balance
 		projectCosts[pID] = c
-
 	}
 	totalCost.Balance = balance
 	userCosts := UserCosts{

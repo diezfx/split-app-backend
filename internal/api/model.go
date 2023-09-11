@@ -142,7 +142,6 @@ func UserCostsFromService(c service.UserCosts) UserCosts {
 		TotalCost:    CostFromService(c.TotalCost),
 		ProjectCosts: projectCosts,
 	}
-
 }
 
 func CostFromService(c service.Cost) Cost {
