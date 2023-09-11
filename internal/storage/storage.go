@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/diezfx/split-app-backend/pkg/logger"
 	"github.com/diezfx/split-app-backend/pkg/postgres"
 	"github.com/georgysavva/scany/v2/sqlscan"
 	"github.com/golang-migrate/migrate/v4"
@@ -142,10 +143,10 @@ func (c *Client) AddTransaction(ctx context.Context, projectID uuid.UUID, transa
 
 func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
 	sqlQuery := `
-	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
+	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id,t.amount
 	FROM transactions as t
 	LEFT JOIN transaction_targets as tt
-	ON t.id=tt.transaction_id
+	ON t.id=tt.transaction_id 
 	WHERE source_id=$1
 	`
 	var transactionElements []transactionQueryElement
@@ -154,6 +155,7 @@ func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID 
 		return nil, fmt.Errorf("select transactions: %w", err)
 	}
 
+	logger.Info(ctx).String("transactions", fmt.Sprint(transactionElements)).Msg("test")
 	// merge transactions
 	transactions := mergeTransactionElements(transactionElements)
 	return transactions, nil
@@ -161,11 +163,11 @@ func (c *Client) GetAllOutgoingTransactionsByUserID(ctx context.Context, userID 
 
 func (c *Client) GetAllIncomingTransactionsByUserID(ctx context.Context, userID string) ([]Transaction, error) {
 	sqlQuery := `
-	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id
+	SELECT t.id, t.name, t.source_id,tt.user_id as target_id, t.transaction_type,t.project_id,t.amount
 	FROM transactions as t
 	JOIN transaction_targets as tt
-	ON t.id=tt.transaction_id
-	WHERE target_id=$1
+	ON t.id=tt.transaction_id 
+	WHERE tt.user_id=$1
 	`
 	var transactionElements []transactionQueryElement
 	err := sqlscan.Select(ctx, c.conn.DB, &transactionElements, sqlQuery, userID)
@@ -260,6 +262,8 @@ func mergeTransactionElements(transactionElements []transactionQueryElement) []T
 			}
 			transactions = append(transactions, transaction)
 			index = len(transactions) - 1
+		} else {
+			transaction = transactions[index]
 		}
 
 		if te.TargetID != "" {

@@ -120,3 +120,35 @@ type ErrorResponse struct {
 	ErrorCode int
 	Reason    string
 }
+
+type UserCosts struct {
+	TotalCost    Cost               `json:"totalCosts"`
+	ProjectCosts map[uuid.UUID]Cost `json:"projectCosts"`
+}
+
+type Cost struct {
+	Expenses float64 `json:"expenses"`
+	Income   float64 `json:"income"`
+	Balance  float64 `json:"balance"`
+}
+
+func UserCostsFromService(c service.UserCosts) UserCosts {
+	projectCosts := make(map[uuid.UUID]Cost, len(c.ProjectCosts))
+	for p, pc := range c.ProjectCosts {
+		projectCosts[p] = CostFromService(pc)
+	}
+
+	return UserCosts{
+		TotalCost:    CostFromService(c.TotalCost),
+		ProjectCosts: projectCosts,
+	}
+
+}
+
+func CostFromService(c service.Cost) Cost {
+	return Cost{
+		Expenses: c.Expenses.AsMajorUnits(),
+		Income:   c.Income.AsMajorUnits(),
+		Balance:  c.Balance.AsMajorUnits(),
+	}
+}

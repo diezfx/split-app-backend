@@ -41,6 +41,7 @@ type Cost struct {
 }
 
 type Transaction struct {
+	ProjectID       uuid.UUID
 	ID              uuid.UUID
 	Name            string
 	TransactionType TransactionType
@@ -101,5 +102,6 @@ func FromStorageTransaction(trans storage.Transaction) Transaction {
 		SourceID:        trans.SourceID,
 		TargetIDs:       trans.TargetIDs,
 		TransactionType: ParseTransactionType(trans.TransactionType),
+		ProjectID:       trans.ProjectID,
 	}
 }

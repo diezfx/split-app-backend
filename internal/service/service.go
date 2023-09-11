@@ -126,34 +126,73 @@ func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts,
 	}
 	outgoing := make([]Transaction, 0, len(outgoingSt))
 	for _, tx := range outgoingSt {
+		fmt.Printf("\n%+v\n", tx)
 		outgoing = append(outgoing, FromStorageTransaction(tx))
 	}
 
-	totalIncome := money.New(0, money.EUR)
+	totalCost := Cost{
+		Expenses: money.New(0, money.EUR),
+		Income:   money.New(0, money.EUR),
+		Balance:  money.New(0, money.EUR),
+	}
+	projectCosts := map[uuid.UUID]Cost{}
+
 	for _, tx := range income {
-		totalIncome, err = totalIncome.Add(tx.Amount)
+		if _, ok := projectCosts[tx.ProjectID]; !ok {
+			projectCosts[tx.ProjectID] = Cost{
+				Expenses: money.New(0, money.EUR),
+				Income:   money.New(0, money.EUR),
+				Balance:  money.New(0, money.EUR),
+			}
+		}
+		totalIncome, err := totalCost.Income.Add(tx.Amount)
 		if err != nil {
 			return UserCosts{}, fmt.Errorf("add to totalIncome: %w", err)
 		}
+		totalCost.Income = totalIncome
+
+		projectCost := projectCosts[tx.ProjectID]
+		newProjectIncome, _ := projectCost.Income.Add(tx.Amount)
+		projectCost.Income = newProjectIncome
+		projectCosts[tx.ProjectID] = projectCost
 	}
-	totalExpenses := money.New(0, money.EUR)
+
 	for _, tx := range outgoing {
-		totalExpenses, err = totalExpenses.Add(tx.Amount)
+		if _, ok := projectCosts[tx.ProjectID]; !ok {
+			projectCosts[tx.ProjectID] = Cost{
+				Expenses: money.New(0, money.EUR),
+				Income:   money.New(0, money.EUR),
+				Balance:  money.New(0, money.EUR),
+			}
+		}
+		totalExpenses, err := totalCost.Expenses.Add(tx.Amount)
+		totalCost.Expenses = totalExpenses
+
+		projectCost := projectCosts[tx.ProjectID]
+		newProjectExpenses, _ := projectCost.Expenses.Add(tx.Amount)
+		projectCost.Expenses = newProjectExpenses
+		projectCosts[tx.ProjectID] = projectCost
+
 		if err != nil {
 			return UserCosts{}, fmt.Errorf("add to totalExpeses: %w", err)
 		}
 	}
 
-	balance, err := totalExpenses.Subtract(totalIncome)
+	balance, err := totalCost.Expenses.Subtract(totalCost.Income)
 	if err != nil {
 		return UserCosts{}, fmt.Errorf("calc balance: %w", err)
 	}
+
+	for pID, c := range projectCosts {
+		balance, _ := c.Expenses.Subtract(c.Income)
+		c.Balance = balance
+		projectCosts[pID] = c
+
+	}
+	totalCost.Balance = balance
 	userCosts := UserCosts{
-		TotalCost: Cost{
-			Expenses: totalExpenses,
-			Income:   totalIncome,
-			Balance:  balance,
-		},
+		TotalCost:    totalCost,
+		ProjectCosts: projectCosts,
 	}
 	return userCosts, nil
 }

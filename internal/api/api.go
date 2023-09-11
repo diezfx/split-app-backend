@@ -73,18 +73,18 @@ func (api *APIHandler) getProjectUsersHandler(ctx *gin.Context) {
 }
 
 func (api *APIHandler) getUserCostsHandler(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
+	id := ctx.Param("id")
+	if id == "" {
 		handleError(ctx, fmt.Errorf("invalid id given: %w", errInvalidInput))
+		return
 	}
-	users, err := api.projectService.GetProjectUsers(ctx, id)
+	users, err := api.projectService.GetCostsByUser(ctx, id)
 	if err != nil {
 		handleError(ctx, fmt.Errorf("getUsers: %w", err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, users)
+	ctx.JSON(http.StatusOK, UserCostsFromService(users))
 }
 
 func (api *APIHandler) getProjectsHandler(ctx *gin.Context) {
