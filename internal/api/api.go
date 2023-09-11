@@ -30,7 +30,7 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	mr.Use(middleware.HTTPLoggingMiddleware())
 	mr.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "PATCH", "POST", "OPTION"},
-		AllowHeaders:     []string{"Origin","Authorization"},
+		AllowHeaders:     []string{"Origin", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length", "Authorization"},
 		AllowCredentials: true,
 		AllowAllOrigins:  true,
@@ -170,12 +170,21 @@ func handleError(ctx *gin.Context, err error) {
 	switch {
 	case errors.Is(err, errInvalidInput):
 		logger.Info(ctx).Err(err).Msg("request failed with invalid input")
-		ctx.String(http.StatusBadRequest, "invalid input")
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{
+			ErrorCode: http.StatusBadRequest,
+			Reason:    "invalid input",
+		})
 	case errors.Is(err, service.ErrProjectNotFound):
 		logger.Info(ctx).Err(err).Msg("not found")
-		ctx.String(http.StatusNotFound, "not found")
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{
+			ErrorCode: http.StatusNotFound,
+			Reason:    "not found",
+		})
 	default:
 		logger.Error(ctx, err).Msg("unexpected error occurred")
-		ctx.String(http.StatusInternalServerError, "unexpected error")
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{
+			ErrorCode: http.StatusInternalServerError,
+			Reason:    "unexpected",
+		})
 	}
 }

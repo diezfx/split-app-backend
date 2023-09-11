@@ -115,3 +115,8 @@ func ProjectFromServiceProject(p service.Project) Project {
 type User struct {
 	ID string `json:"id"`
 }
+
+type ErrorResponse struct {
+	ErrorCode int
+	Reason    string
+}
