@@ -29,6 +29,17 @@ type User struct {
 	ID string `json:"id"`
 }
 
+type UserCosts struct {
+	TotalCost    Cost
+	ProjectCosts map[uuid.UUID]Cost
+}
+
+type Cost struct {
+	Expenses *money.Money
+	Income   *money.Money
+	Balance  *money.Money
+}
+
 type Transaction struct {
 	ID              uuid.UUID
 	Name            string

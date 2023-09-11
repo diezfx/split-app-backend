@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Rhymond/go-money"
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
@@ -106,4 +107,53 @@ func (s *Service) AddProject(ctx context.Context, project Project) (Project, err
 	}
 
 	return FromStorageProject(proj), nil
+}
+
+// GetCostsByUser implements api.ProjectService.
+func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts, error) {
+	incomeSt, err := s.projStorage.GetAllIncomingTransactionsByUserID(ctx, userID)
+	if err != nil {
+		return UserCosts{}, fmt.Errorf("get incoming transactions: %w", err)
+	}
+	income := make([]Transaction, 0, len(incomeSt))
+	for _, tx := range incomeSt {
+		income = append(income, FromStorageTransaction(tx))
+	}
+
+	outgoingSt, err := s.projStorage.GetAllOutgoingTransactionsByUserID(ctx, userID)
+	if err != nil {
+		return UserCosts{}, fmt.Errorf("get outgoing transactions: %w", err)
+	}
+	outgoing := make([]Transaction, 0, len(outgoingSt))
+	for _, tx := range outgoingSt {
+		outgoing = append(outgoing, FromStorageTransaction(tx))
+	}
+
+	totalIncome := money.New(0, money.EUR)
+	for _, tx := range income {
+		totalIncome, err = totalIncome.Add(tx.Amount)
+		if err != nil {
+			return UserCosts{}, fmt.Errorf("add to totalIncome: %w", err)
+		}
+	}
+	totalExpenses := money.New(0, money.EUR)
+	for _, tx := range outgoing {
+		totalExpenses, err = totalExpenses.Add(tx.Amount)
+		if err != nil {
+			return UserCosts{}, fmt.Errorf("add to totalExpeses: %w", err)
+		}
+	}
+
+	balance, err := totalExpenses.Subtract(totalIncome)
+	if err != nil {
+		return UserCosts{}, fmt.Errorf("calc balance: %w", err)
+	}
+	userCosts := UserCosts{
+		TotalCost: Cost{
+			Expenses: totalExpenses,
+			Income:   totalIncome,
+			Balance:  balance,
+		},
+	}
+	return userCosts, nil
 }
