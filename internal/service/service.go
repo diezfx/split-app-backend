@@ -110,6 +110,7 @@ func (s *Service) AddProject(ctx context.Context, project Project) (Project, err
 }
 
 // GetCostsByUser implements api.ProjectService.
+// TODO improve implementation use pointers
 func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts, error) {
 	incomeSt, err := s.projStorage.GetAllIncomingTransactionsByUserID(ctx, userID)
 	if err != nil {
