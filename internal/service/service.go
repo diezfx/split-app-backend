@@ -15,6 +15,11 @@ type Service struct {
 	projStorage ProjectStorage
 }
 
+// AddProjectUser implements api.ProjectService.
+func (s *Service) AddProjectUser(ctx context.Context, projID uuid.UUID, userID string) error {
+	return s.projStorage.AddProjectUser(ctx, projID, userID)
+}
+
 // GetProjectUsers implements api.ProjectService.
 func (s *Service) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]User, error) {
 	sUsers, err := s.projStorage.GetProjectUsers(ctx, projectID)

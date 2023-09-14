@@ -75,6 +75,33 @@ func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
 	return projects, nil
 }
 
+func (c *Client) AddProjectUser(ctx context.Context, projectID uuid.UUID, userID string) error {
+	err := withTransaction(ctx, c.conn.DB, func(ctx context.Context, tx *sql.Tx) error {
+		return addUsers(ctx, tx, projectID, []string{userID})
+	})
+	if err != nil {
+		return fmt.Errorf("addUser: %w", err)
+	}
+	return nil
+}
+
+func addUsers(ctx context.Context, tx *sql.Tx, projectID uuid.UUID, userIDs []string) error {
+	sqlUserInsert := `insert into project_memberships (project_id,user_id)
+	values($1,$2)
+	`
+	stmt, err := tx.PrepareContext(ctx, sqlUserInsert)
+	if err != nil {
+		return fmt.Errorf("prepare add project users: %w", err)
+	}
+	for _, user := range userIDs {
+		_, err := stmt.ExecContext(ctx, projectID, user)
+		if err != nil {
+			return fmt.Errorf("insert user: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) {
 	addProjectFunc := func(ctx context.Context, tx *sql.Tx) error {
 		sqlQuery := `insert into projects (id,name)
@@ -84,21 +111,7 @@ func (c *Client) AddProject(ctx context.Context, proj Project) (Project, error) 
 		if err != nil {
 			return fmt.Errorf("insert project: %w", err)
 		}
-
-		sqlUserInsert := `insert into project_memberships (project_id,user_id)
-		values($1,$2)
-		`
-		stmt, err := tx.Prepare(sqlUserInsert)
-		if err != nil {
-			return fmt.Errorf("prepare add project users: %w", err)
-		}
-		for _, user := range proj.Members {
-			_, err := stmt.ExecContext(ctx, proj.ID, user)
-			if err != nil {
-				return fmt.Errorf("insert user: %w", err)
-			}
-		}
-		return nil
+		return addUsers(ctx, tx, proj.ID, proj.Members)
 	}
 
 	err := withTransaction(ctx, c.conn.DB, addProjectFunc)
