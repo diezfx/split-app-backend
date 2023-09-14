@@ -29,7 +29,19 @@ type User struct {
 	ID string `json:"id"`
 }
 
+type UserCosts struct {
+	TotalCost    Cost
+	ProjectCosts map[uuid.UUID]Cost
+}
+
+type Cost struct {
+	Expenses *money.Money
+	Income   *money.Money
+	Balance  *money.Money
+}
+
 type Transaction struct {
+	ProjectID       uuid.UUID
 	ID              uuid.UUID
 	Name            string
 	TransactionType TransactionType
@@ -90,5 +102,6 @@ func FromStorageTransaction(trans storage.Transaction) Transaction {
 		SourceID:        trans.SourceID,
 		TargetIDs:       trans.TargetIDs,
 		TransactionType: ParseTransactionType(trans.TransactionType),
+		ProjectID:       trans.ProjectID,
 	}
 }

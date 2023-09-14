@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Rhymond/go-money"
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
@@ -106,4 +107,89 @@ func (s *Service) AddProject(ctx context.Context, project Project) (Project, err
 	}
 
 	return FromStorageProject(proj), nil
+}
+
+// GetCostsByUser implements api.ProjectService.
+// TODO improve implementation use pointers
+func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts, error) {
+	incomeSt, err := s.projStorage.GetAllIncomingTransactionsByUserID(ctx, userID)
+	if err != nil {
+		return UserCosts{}, fmt.Errorf("get incoming transactions: %w", err)
+	}
+	income := make([]Transaction, 0, len(incomeSt))
+	for _, tx := range incomeSt {
+		income = append(income, FromStorageTransaction(tx))
+	}
+
+	outgoingSt, err := s.projStorage.GetAllOutgoingTransactionsByUserID(ctx, userID)
+	if err != nil {
+		return UserCosts{}, fmt.Errorf("get outgoing transactions: %w", err)
+	}
+	outgoing := make([]Transaction, 0, len(outgoingSt))
+	for _, tx := range outgoingSt {
+		fmt.Printf("\n%+v\n", tx)
+		outgoing = append(outgoing, FromStorageTransaction(tx))
+	}
+
+	totalCost := Cost{
+		Expenses: money.New(0, money.EUR),
+		Income:   money.New(0, money.EUR),
+		Balance:  money.New(0, money.EUR),
+	}
+	projectCosts := map[uuid.UUID]Cost{}
+
+	for _, tx := range income {
+		if _, ok := projectCosts[tx.ProjectID]; !ok {
+			projectCosts[tx.ProjectID] = Cost{
+				Expenses: money.New(0, money.EUR),
+				Income:   money.New(0, money.EUR),
+				Balance:  money.New(0, money.EUR),
+			}
+		}
+		totalIncome, _ := totalCost.Income.Add(tx.Amount)
+		totalCost.Income = totalIncome
+
+		projectCost := projectCosts[tx.ProjectID]
+		newProjectIncome, _ := projectCost.Income.Add(tx.Amount)
+		projectCost.Income = newProjectIncome
+		projectCosts[tx.ProjectID] = projectCost
+	}
+
+	for _, tx := range outgoing {
+		if _, ok := projectCosts[tx.ProjectID]; !ok {
+			projectCosts[tx.ProjectID] = Cost{
+				Expenses: money.New(0, money.EUR),
+				Income:   money.New(0, money.EUR),
+				Balance:  money.New(0, money.EUR),
+			}
+		}
+		totalExpenses, _ := totalCost.Expenses.Add(tx.Amount)
+		totalCost.Expenses = totalExpenses
+
+		projectCost := projectCosts[tx.ProjectID]
+		newProjectExpenses, _ := projectCost.Expenses.Add(tx.Amount)
+		projectCost.Expenses = newProjectExpenses
+		projectCosts[tx.ProjectID] = projectCost
+
+		if err != nil {
+			return UserCosts{}, fmt.Errorf("add to totalExpeses: %w", err)
+		}
+	}
+
+	balance, err := totalCost.Expenses.Subtract(totalCost.Income)
+	if err != nil {
+		return UserCosts{}, fmt.Errorf("calc balance: %w", err)
+	}
+
+	for pID, c := range projectCosts {
+		balance, _ = c.Expenses.Subtract(c.Income)
+		c.Balance = balance
+		projectCosts[pID] = c
+	}
+	totalCost.Balance = balance
+	userCosts := UserCosts{
+		TotalCost:    totalCost,
+		ProjectCosts: projectCosts,
+	}
+	return userCosts, nil
 }
