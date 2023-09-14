@@ -46,7 +46,7 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	r.POST("projects", apiHandler.addProjectHandler)
 	r.GET("users/:id/costs", apiHandler.getUserCostsHandler)
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
-	r.GET("projects/:id/payout", apiHandler.getProjectUsersHandler)
+	r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
 
 	return &http.Server{
 		Handler: mr,
