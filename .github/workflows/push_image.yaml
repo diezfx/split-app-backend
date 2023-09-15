@@ -21,7 +21,7 @@ jobs:
           echo "BUILD_ID=${branch}-${sha}-${ts}" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{github.repository}}
 
