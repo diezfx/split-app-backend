@@ -208,6 +208,24 @@ func (c *Client) GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]Us
 	return users, nil
 }
 
+func (c *Client) GetUser(ctx context.Context, userID string) (User, error) {
+	sqlQuery := `
+	SELECT id
+	FROM members
+	WHERE id=$1
+	`
+	var user User
+	err := sqlscan.Get(ctx, c.conn.DB, &user, sqlQuery, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return User{}, ErrNotFound
+	}
+	if err != nil {
+		return User{}, fmt.Errorf("select users: %w", err)
+	}
+
+	return user, nil
+}
+
 func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
 	sqlQuery := `
 	SELECT id
