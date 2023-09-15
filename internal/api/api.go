@@ -97,7 +97,7 @@ func (api *APIHandler) addProjectUserHandler(ctx *gin.Context) {
 	}
 	projectUser := User{}
 	err = ctx.Bind(&projectUser)
-	if err != nil {
+	if err != nil || projectUser.ID == "" {
 		handleError(ctx, fmt.Errorf("invalid body: %w: %w", err, errInvalidInput))
 		return
 	}
