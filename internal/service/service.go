@@ -7,7 +7,6 @@ import (
 
 	"github.com/Rhymond/go-money"
 	"github.com/diezfx/split-app-backend/internal/storage"
-	"github.com/diezfx/split-app-backend/pkg/logger"
 	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
 )
@@ -19,19 +18,15 @@ type Service struct {
 // AddProjectUser implements api.ProjectService.
 func (s *Service) AddProjectUser(ctx context.Context, projID uuid.UUID, userID string) error {
 	if _, err := s.projStorage.GetUser(ctx, userID); err != nil {
-		logger.Info(ctx).Msg("this is reached")
 		if err != nil && !errors.Is(err, storage.ErrNotFound) {
 			return fmt.Errorf("get user: %w", err)
 		}
-		logger.Info(ctx).Msg("this is reached2")
 		if err != nil && errors.Is(err, storage.ErrNotFound) {
 			err := s.projStorage.AddUser(ctx, storage.User{ID: userID})
 			if err != nil {
 				return fmt.Errorf("add user:%w", err)
 			}
-			logger.Info(ctx).Msg("this is reached4")
 		}
-		logger.Info(ctx).Msg("this is reached3")
 	}
 
 	err := s.projStorage.AddProjectUser(ctx, projID, userID)
