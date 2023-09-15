@@ -101,6 +101,7 @@ func (api *APIHandler) addProjectUserHandler(ctx *gin.Context) {
 		handleError(ctx, fmt.Errorf("invalid body: %w: %w", err, errInvalidInput))
 		return
 	}
+	logger.Info(ctx).Any("user", projectUser).Msg("the user")
 	err = api.projectService.AddProjectUser(ctx, projectID, projectUser.ID)
 	if err != nil {
 		handleError(ctx, fmt.Errorf("getUsers: %w", err))

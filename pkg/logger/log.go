@@ -20,6 +20,7 @@ type Log interface {
 	RawJSON(key string, value []byte) Log
 	Duration(key string, duration time.Duration) Log
 	String(key, value string) Log
+	Any(key string, value any) Log
 	Err(error) Log
 	Int(key string, value int) Log
 	Bool(key string, value bool) Log
@@ -43,6 +44,11 @@ func (l *logger) RawJSON(key string, value []byte) Log {
 
 func (l *logger) Bool(key string, value bool) Log {
 	l.zeroLog.Bool(key, value)
+	return l
+}
+
+func (l *logger) Any(key string, value any) Log {
+	l.zeroLog.Any(key, value)
 	return l
 }
 
