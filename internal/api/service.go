@@ -12,6 +12,7 @@ type ProjectService interface {
 	GetProjects(ctx context.Context) ([]service.Project, error)
 	AddProject(ctx context.Context, proj service.Project) (service.Project, error)
 	GetProjectUsers(ctx context.Context, projectID uuid.UUID) ([]service.User, error)
+	AddProjectUser(ctx context.Context, projID uuid.UUID, userID string) error
 	GetCostsByUser(ctx context.Context, userID string) (service.UserCosts, error)
 	AddTransaction(ctx context.Context, projID uuid.UUID, transaction service.Transaction) error
 }

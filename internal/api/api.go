@@ -47,6 +47,7 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	r.GET("users/:id/costs", apiHandler.getUserCostsHandler)
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
 	r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
+	r.POST("projects/:id/users", apiHandler.addProjectUserHandler)
 
 	return &http.Server{
 		Handler: mr,
@@ -85,6 +86,28 @@ func (api *APIHandler) getUserCostsHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, UserCostsFromService(users))
+}
+
+func (api *APIHandler) addProjectUserHandler(ctx *gin.Context) {
+	projectIDStr := ctx.Param("id")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("invalid id given: %w: %w", err, errInvalidInput))
+		return
+	}
+	projectUser := User{}
+	err = ctx.Bind(&projectUser)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("invalid body: %w: %w", err, errInvalidInput))
+		return
+	}
+	err = api.projectService.AddProjectUser(ctx, projectID, projectUser.ID)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("getUsers: %w", err))
+		return
+	}
+
+	ctx.Status(http.StatusCreated)
 }
 
 func (api *APIHandler) getProjectsHandler(ctx *gin.Context) {

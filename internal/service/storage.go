@@ -15,6 +15,7 @@ type ProjectStorage interface {
 	AddTransaction(ctx context.Context, projectID uuid.UUID, transaction storage.Transaction) error
 	GetUsers(ctx context.Context) ([]storage.User, error)
 	AddUser(ctx context.Context, user storage.User) error
+	AddProjectUser(ctx context.Context, projectID uuid.UUID, userID string) error
 
 	GetAllOutgoingTransactionsByUserID(ctx context.Context, userID string) ([]storage.Transaction, error)
 	GetAllIncomingTransactionsByUserID(ctx context.Context, userID string) ([]storage.Transaction, error)
