@@ -2,9 +2,9 @@ package costcalc
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Rhymond/go-money"
-	"github.com/diezfx/split-app-backend/internal/service"
 	"github.com/diezfx/split-app-backend/pkg/logger"
 )
 
@@ -17,19 +17,89 @@ type (
 	Creditor string
 )
 
-func New(txs []*service.Transaction) *Calculator {
+func New(txs []Transaction) *Calculator {
 	return &Calculator{edges: TransformTransactionsToCostEdges(txs)}
 }
 
-func (c *Calculator) CalculateCostForUser(userID string) *money.Money {
-	costSum := money.New(0, money.EUR)
+func (c *Calculator) CalculateCostForUser(userID string) (*Cost, error) {
+	cost := &Cost{
+		Expenses: money.New(0, money.EUR),
+		Income:   money.New(0, money.EUR),
+		Balance:  money.New(0, money.EUR)}
 
 	for _, tx := range c.edges {
-		newSum, _ := costSum.Add(calculateBalanceForUser(tx, userID))
-		costSum = newSum
+		// add to expense when source
+		if tx.Source == userID {
+			newExpense, err := cost.Expenses.Add(tx.Amount)
+			if err != nil {
+				return nil, fmt.Errorf("add source: %w", err)
+			}
+			cost.Expenses = newExpense
+		}
+		// add to income when target
+		if tx.Target == userID {
+			newIncome, err := cost.Income.Add(tx.Amount)
+			if err != nil {
+				return nil, fmt.Errorf("add target: %w", err)
+			}
+			cost.Income = newIncome
+		}
 	}
 
-	return costSum
+	newBalance, err := cost.Expenses.Subtract(cost.Income)
+	if err != nil {
+		return nil, fmt.Errorf("calculate new user balance: %w", err)
+	}
+	cost.Balance = newBalance
+
+	return cost, nil
+}
+
+func (c *Calculator) CalculateCostForAllUsers() (*ProjectCost, error) {
+	totalCost := money.New(0, money.EUR)
+
+	userCosts := map[string]*Cost{}
+
+	for _, tx := range c.edges {
+		newCost, err := totalCost.Add(tx.Amount)
+		if err != nil {
+			return nil, fmt.Errorf("add to total cost: %w", err)
+		}
+		totalCost = newCost
+
+		source := userCosts[tx.Source]
+		if source == nil {
+			source = &Cost{Expenses: money.New(0, money.EUR), Income: money.New(0, money.EUR), Balance: money.New(0, money.EUR)}
+			userCosts[tx.Source] = source
+		}
+		target := userCosts[tx.Target]
+		if target == nil {
+			target = &Cost{Expenses: money.New(0, money.EUR), Income: money.New(0, money.EUR), Balance: money.New(0, money.EUR)}
+			userCosts[tx.Target] = target
+		}
+
+		newExpenses, err := source.Expenses.Add(tx.Amount)
+		if err != nil {
+			return nil, fmt.Errorf("add to source expenses: %w", err)
+		}
+		source.Expenses = newExpenses
+		newIncome, err := target.Income.Add(tx.Amount)
+		if err != nil {
+			return nil, fmt.Errorf("add to source expenses: %w", err)
+		}
+		target.Income = newIncome
+	}
+
+	// as last step calculate balance
+	for _, c := range userCosts {
+		newBalance, err := c.Expenses.Subtract(c.Income)
+		if err != nil {
+			return nil, fmt.Errorf("calculate new user balance: %w", err)
+		}
+		c.Balance = newBalance
+	}
+
+	return &ProjectCost{TotalCost: totalCost, CostPerUser: userCosts}, nil
 }
 
 func (c *Calculator) CalculateMinCostFlow() []Edge {
@@ -102,15 +172,4 @@ func getMaxCreditor(userBalance map[string]*money.Money) string {
 		}
 	}
 	return creditor
-}
-
-func calculateBalanceForUser(tx Edge, userID string) *money.Money {
-	amount := money.New(0, money.EUR)
-	if userID == tx.Source {
-		amount = tx.Amount
-	}
-	if userID == tx.Target {
-		amount = tx.Amount.Negative()
-	}
-	return amount
 }

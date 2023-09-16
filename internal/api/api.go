@@ -48,6 +48,7 @@ func InitAPI(cfg *config.Config, projectService ProjectService) *http.Server {
 	r.POST("projects/:id/transactions", apiHandler.addTransactionHandler)
 	r.GET("projects/:id/users", apiHandler.getProjectUsersHandler)
 	r.POST("projects/:id/users", apiHandler.addProjectUserHandler)
+	r.GET("projects/:id/costs", apiHandler.getProjectCostsHandler)
 
 	return &http.Server{
 		Handler: mr,
@@ -71,6 +72,21 @@ func (api *APIHandler) getProjectUsersHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, users)
+}
+
+func (api *APIHandler) getProjectCostsHandler(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("invalid id givens: %w", errInvalidInput))
+	}
+	costs, err := api.projectService.GetCostsByProject(ctx, id)
+	if err != nil {
+		handleError(ctx, fmt.Errorf("getUsers: %w", err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, ProjectCostsFromService(costs))
 }
 
 func (api *APIHandler) getUserCostsHandler(ctx *gin.Context) {

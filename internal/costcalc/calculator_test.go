@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/Rhymond/go-money"
-	"github.com/diezfx/split-app-backend/internal/service"
 )
 
 func TestCalculator(t *testing.T) {
@@ -12,20 +11,20 @@ func TestCalculator(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		transactions []*service.Transaction
+		transactions []Transaction
 
 		expectedAmount *money.Money
 	}{{
 		name:           "outgoing",
-		transactions:   []*service.Transaction{{SourceID: userID, TargetIDs: []string{"u2", "u3"}, Amount: money.New(24, money.EUR)}},
+		transactions:   []Transaction{{SourceID: userID, TargetIDs: []string{"u2", "u3"}, Amount: money.New(24, money.EUR)}},
 		expectedAmount: money.New(24, money.EUR),
 	}, {
 		name:           "incoming",
-		transactions:   []*service.Transaction{{SourceID: "u2", TargetIDs: []string{userID, "u3"}, Amount: money.New(24, money.EUR)}},
+		transactions:   []Transaction{{SourceID: "u2", TargetIDs: []string{userID, "u3"}, Amount: money.New(24, money.EUR)}},
 		expectedAmount: money.New(-12, money.EUR),
 	}, {
 		name: "complex",
-		transactions: []*service.Transaction{
+		transactions: []Transaction{
 			{SourceID: userID, TargetIDs: []string{"u1", "u4", "u3"}, Amount: money.New(25, money.EUR)},
 			{SourceID: userID, TargetIDs: []string{"u1", "u3"}, Amount: money.New(25, money.EUR)},
 			{SourceID: "u2", TargetIDs: []string{userID, "u3", "u4", "u5"}, Amount: money.New(100, money.EUR)},
@@ -37,10 +36,13 @@ func TestCalculator(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			calculator := New(test.transactions)
-			result := calculator.CalculateCostForUser(userID)
+			result, err := calculator.CalculateCostForUser(userID)
+			if err != nil {
+				t.Fatalf("unexpected error calculating: %s", err)
+			}
 
-			if same, _ := result.Equals(test.expectedAmount); !same {
-				t.Errorf("expected amount %s got %s", test.expectedAmount.Display(), result.Display())
+			if same, _ := result.Balance.Equals(test.expectedAmount); !same {
+				t.Errorf("expected amount %s got %s", test.expectedAmount.Display(), result.Balance.Display())
 			}
 		})
 	}
@@ -51,26 +53,26 @@ func TestMinCostFlow(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		transactions []*service.Transaction
+		transactions []Transaction
 
 		expectedCashFlow []Edge
 	}{{
 		name:         "outgoing",
-		transactions: []*service.Transaction{{SourceID: userID, TargetIDs: []string{"u2", "u3"}, Amount: money.New(24, money.EUR)}},
+		transactions: []Transaction{{SourceID: userID, TargetIDs: []string{"u2", "u3"}, Amount: money.New(24, money.EUR)}},
 		expectedCashFlow: []Edge{
 			{Source: "u2", Target: userID, Amount: money.New(12, money.EUR)},
 			{Source: "u3", Target: userID, Amount: money.New(12, money.EUR)},
 		},
 	}, {
 		name:         "incoming",
-		transactions: []*service.Transaction{{SourceID: "u2", TargetIDs: []string{userID, "u3"}, Amount: money.New(24, money.EUR)}},
+		transactions: []Transaction{{SourceID: "u2", TargetIDs: []string{userID, "u3"}, Amount: money.New(24, money.EUR)}},
 		expectedCashFlow: []Edge{
 			{Source: userID, Target: "u2", Amount: money.New(12, money.EUR)},
 			{Source: "u3", Target: "u2", Amount: money.New(12, money.EUR)},
 		},
 	}, {
 		name: "complex",
-		transactions: []*service.Transaction{
+		transactions: []Transaction{
 			{SourceID: userID, TargetIDs: []string{"u1", "u4", "u3"}, Amount: money.New(25, money.EUR)},
 			{SourceID: userID, TargetIDs: []string{"u1", "u3"}, Amount: money.New(25, money.EUR)},
 			{SourceID: "u2", TargetIDs: []string{userID, "u3", "u4", "u5"}, Amount: money.New(100, money.EUR)},

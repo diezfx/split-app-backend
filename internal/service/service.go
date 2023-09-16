@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Rhymond/go-money"
+	"github.com/diezfx/split-app-backend/internal/costcalc"
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
@@ -213,4 +214,29 @@ func (s *Service) GetCostsByUser(ctx context.Context, userID string) (UserCosts,
 		ProjectCosts: projectCosts,
 	}
 	return userCosts, nil
+}
+
+func (s *Service) GetCostsByProject(ctx context.Context, projID uuid.UUID) (ProjectCosts, error) {
+	proj, err := s.GetProjectByID(ctx, projID)
+	if err != nil && errors.Is(err, ErrProjectNotFound) {
+		return ProjectCosts{}, err
+	}
+	if err != nil {
+		return ProjectCosts{}, fmt.Errorf("get project: %w", err)
+	}
+
+	costCalcTransactions := make([]costcalc.Transaction, 0, len(proj.Transactions))
+
+	for _, tx := range proj.Transactions {
+		costCalcTransactions = append(costCalcTransactions, tx.ToCostCalc())
+	}
+
+	costCalculator := costcalc.New(costCalcTransactions)
+
+	allCosts, err := costCalculator.CalculateCostForAllUsers()
+	if err != nil {
+		return ProjectCosts{}, fmt.Errorf("calc costs: %w", err)
+	}
+
+	return FromCostCalcProjectCost(*allCosts), nil
 }
