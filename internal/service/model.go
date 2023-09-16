@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/Rhymond/go-money"
+	"github.com/diezfx/split-app-backend/internal/costcalc"
 	"github.com/diezfx/split-app-backend/internal/storage"
 	"github.com/google/uuid"
 )
@@ -34,6 +35,11 @@ type UserCosts struct {
 	ProjectCosts map[uuid.UUID]Cost
 }
 
+type ProjectCosts struct {
+	TotalCost *money.Money
+	UserCosts map[string]Cost
+}
+
 type Cost struct {
 	Expenses *money.Money
 	Income   *money.Money
@@ -48,6 +54,15 @@ type Transaction struct {
 	Amount          *money.Money
 	SourceID        string
 	TargetIDs       []string
+}
+
+func (t *Transaction) ToCostCalc() costcalc.Transaction {
+	return costcalc.Transaction{
+		ProjectID: t.ProjectID,
+		ID:        t.ID,
+		Amount:    t.Amount,
+		SourceID:  t.SourceID, TargetIDs: t.TargetIDs,
+	}
 }
 
 type Project struct {
@@ -103,5 +118,25 @@ func FromStorageTransaction(trans storage.Transaction) Transaction {
 		TargetIDs:       trans.TargetIDs,
 		TransactionType: ParseTransactionType(trans.TransactionType),
 		ProjectID:       trans.ProjectID,
+	}
+}
+
+func FromCostCalcCost(cost costcalc.Cost) Cost {
+	return Cost{
+		Expenses: cost.Expenses,
+		Income:   cost.Income,
+		Balance:  cost.Balance,
+	}
+}
+
+func FromCostCalcProjectCost(projectCost costcalc.ProjectCost) ProjectCosts {
+	costPerUser := make(map[string]Cost, len(projectCost.CostPerUser))
+	for u, c := range projectCost.CostPerUser {
+		costPerUser[u] = FromCostCalcCost(*c)
+	}
+
+	return ProjectCosts{
+		TotalCost: projectCost.TotalCost,
+		UserCosts: costPerUser,
 	}
 }

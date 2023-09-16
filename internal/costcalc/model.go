@@ -2,7 +2,7 @@ package costcalc
 
 import (
 	"github.com/Rhymond/go-money"
-	"github.com/diezfx/split-app-backend/internal/service"
+	"github.com/google/uuid"
 )
 
 type Edge struct {
@@ -11,7 +11,7 @@ type Edge struct {
 	Amount *money.Money
 }
 
-func TransformTransactionsToCostEdges(txs []*service.Transaction) []Edge {
+func TransformTransactionsToCostEdges(txs []Transaction) []Edge {
 	edges := []Edge{}
 
 	for _, tx := range txs {
@@ -22,4 +22,24 @@ func TransformTransactionsToCostEdges(txs []*service.Transaction) []Edge {
 	}
 
 	return edges
+}
+
+type Transaction struct {
+	ProjectID uuid.UUID
+	ID        uuid.UUID
+	Amount    *money.Money
+	SourceID  string
+	TargetIDs []string
+}
+
+type Cost struct {
+	Expenses *money.Money
+	Income   *money.Money
+	Balance  *money.Money
+}
+
+type ProjectCost struct {
+	TotalCost *money.Money
+
+	CostPerUser map[string]*Cost
 }

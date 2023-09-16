@@ -122,8 +122,13 @@ type ErrorResponse struct {
 }
 
 type UserCosts struct {
-	TotalCost    Cost               `json:"totalCosts"`
+	TotalCosts   Cost               `json:"totalCosts"`
 	ProjectCosts map[uuid.UUID]Cost `json:"projectCosts"`
+}
+
+type ProjectCosts struct {
+	TotalCosts  float64         `json:"totalCosts"`
+	CostsByUser map[string]Cost `json:"costsByUser"`
 }
 
 type Cost struct {
@@ -139,8 +144,20 @@ func UserCostsFromService(c service.UserCosts) UserCosts {
 	}
 
 	return UserCosts{
-		TotalCost:    CostFromService(c.TotalCost),
+		TotalCosts:   CostFromService(c.TotalCost),
 		ProjectCosts: projectCosts,
+	}
+}
+
+func ProjectCostsFromService(cost service.ProjectCosts) ProjectCosts {
+	userCosts := make(map[string]Cost, len(cost.UserCosts))
+	for u, c := range cost.UserCosts {
+		userCosts[u] = CostFromService(c)
+	}
+
+	return ProjectCosts{
+		TotalCosts:  cost.TotalCost.AsMajorUnits(),
+		CostsByUser: userCosts,
 	}
 }
 
