@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/lestrrat-go/jwx/v2 v2.0.13
-	github.com/rs/zerolog v1.30.0
+	github.com/rs/zerolog v1.31.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
