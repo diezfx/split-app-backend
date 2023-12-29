@@ -10,7 +10,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/google/uuid v1.5.0
 	github.com/jackc/pgx/v5 v5.4.3
-	github.com/lestrrat-go/jwx/v2 v2.0.17
+	github.com/lestrrat-go/jwx/v2 v2.0.18
 	github.com/rs/zerolog v1.31.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
