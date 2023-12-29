@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.6
 
 FROM golang:1.21 AS builder
 ARG APP_NAME
