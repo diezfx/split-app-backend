@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/lestrrat-go/jwx/v2 v2.0.18
 	github.com/rs/zerolog v1.31.0
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
 )
 
 require (
